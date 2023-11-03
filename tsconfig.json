@@ -21,7 +21,9 @@
       "@prisma": ["src/prisma"],
       "@prisma/*": ["src/prisma/*"],
       "@user": ["src/user"],
-      "@user/*": ["src/user/*"]
+      "@user/*": ["src/user/*"],
+      "@contact": ["src/contact"],
+      "@contact/*": ["src/contact/*"]
     }
   }
 }
