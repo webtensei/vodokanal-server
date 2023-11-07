@@ -41,7 +41,7 @@ export class AuthService {
     });
   }
 
-  async login(dto: LoginDto): Promise<Tokens> {
+  async login(dto: LoginDto, agent: string): Promise<Tokens> {
     const user = await this.userService.findOne(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
@@ -49,10 +49,10 @@ export class AuthService {
     if (!user || !compareSync(dto.password, user.password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
-    return this.generateTokens(user);
+    return this.generateTokens(user, agent);
   }
 
-  async refreshTokens(refreshToken: string): Promise<Tokens> {
+  async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {
     const token = await this.prismaService.token.findUnique({
       where: { token: refreshToken },
     });
@@ -64,26 +64,39 @@ export class AuthService {
       throw new UnauthorizedException();
     }
     const user = await this.userService.findOne(token.username);
-    return this.generateTokens(user);
+    return this.generateTokens(user, agent);
   }
 
-  private async generateTokens(user: User): Promise<Tokens> {
+  private async generateTokens(user: User, agent: string): Promise<Tokens> {
     const accessToken =
       `Bearer ` +
       this.jwtService.sign({
         username: user.username,
         role: user.role,
       });
-    const refreshToken = await this.getRefreshToken(user.username);
+    const refreshToken = await this.getRefreshToken(user.username, agent);
     return { accessToken, refreshToken };
   }
 
-  private async getRefreshToken(username: number): Promise<Token> {
-    return this.prismaService.token.create({
-      data: {
+  private async getRefreshToken(
+    username: number,
+    agent: string,
+  ): Promise<Token> {
+    const _token = await this.prismaService.token.findFirst({
+      where: { username, user_agent: agent },
+    });
+    const token = _token?.token ?? '';
+    return this.prismaService.token.upsert({
+      where: { token },
+      update: {
+        token: v4(),
+        expired_in: add(new Date(), { months: 1 }),
+      },
+      create: {
         token: v4(),
         expired_in: add(new Date(), { months: 1 }),
         username: username,
+        user_agent: agent,
       },
     });
   }

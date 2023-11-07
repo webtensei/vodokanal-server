@@ -5,16 +5,15 @@ import {
   Get,
   HttpStatus,
   Post,
-  Req,
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { AuthService } from '@auth/auth.service';
 import { Tokens } from '@auth/interfaces';
-import { Response, Request } from 'express';
+import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { Cookie } from '@shared/decorators';
+import { Cookie, UserAgent } from '@shared/decorators';
 
 const REFRESH_TOKEN = 'refreshtoken';
 
@@ -40,10 +39,10 @@ export class AuthController {
   async login(
     @Body() dto: LoginDto,
     @Res() res: Response,
-    @Req() req: Request,
+    @UserAgent() agent: string,
   ) {
     //   тут я хочу заодно проходиться  и регать в LoginHistory (ну, в сервисе, очевидно)
-    const tokens = await this.authService.login(dto);
+    const tokens = await this.authService.login(dto, agent);
     if (!tokens) {
       throw new BadRequestException(
         `Не получилось войти с данными ${JSON.stringify(dto)}`,
@@ -58,11 +57,12 @@ export class AuthController {
   async refreshTokens(
     @Cookie(REFRESH_TOKEN) refreshToken: string,
     @Res() res: Response,
+    @UserAgent() agent: string,
   ) {
     if (!refreshToken) {
       throw new UnauthorizedException();
     }
-    const tokens = await this.authService.refreshTokens(refreshToken);
+    const tokens = await this.authService.refreshTokens(refreshToken, agent);
     this.setRefreshTokenToCookies(tokens, res);
     if (!tokens) {
       throw new UnauthorizedException();

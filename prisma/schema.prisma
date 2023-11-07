@@ -8,29 +8,31 @@ datasource db {
 }
 
 model User {
-  username Int @unique @id
-  created_at DateTime @default(now())
-  password String
-  name String
-  surname String
-  patronymic String?
+  username           Int                @id @unique
+  created_at         DateTime           @default(now())
+  password           String
+  name               String
+  surname            String
+  patronymic         String?
   preferred_settings PreferredSettings?
-  contacts Contact?
-  addresses Address[]
-  login_histories LoginHistory[]
-  token Token[]
-  role Role @default(VISITOR)
+  contacts           Contact?
+  addresses          Address[]
+  login_histories    LoginHistory[]
+  token              Token[]
+  role               Role               @default(VISITOR)
+
   @@map("users")
 }
 
 model Token {
-  token String @unique
+  token      String   @unique
   expired_in DateTime
-  username Int
-  user User @relation(fields: [username],references: [username])
+  username   Int
+  user_agent String
+  user       User     @relation(fields: [username], references: [username])
+
   @@map("tokens")
 }
-
 
 enum Role {
   VISITOR
@@ -39,54 +41,60 @@ enum Role {
   ADMIN
   SWE
   OWNER
+
   @@map("roles")
 }
 
 model PreferredSettings {
-  username Int @unique
+  username        Int    @unique
   preferred_theme String @default("dark")
-  user User @relation(fields: [username],references: [username])
+  user            User   @relation(fields: [username], references: [username])
+
   @@map("preferred_settings")
 }
 
 model Contact {
-  username Int @unique
-  email String
+  username              Int      @unique
+  email                 String
   email_activation_code String
-  email_activated Boolean @default(false)
-  email_activated_at DateTime
-  phone String
+  email_activated       Boolean  @default(false)
+  email_activated_at    DateTime
+  phone                 String
   phone_activation_code String
-  phone_activated Boolean @default(false)
-  phone_activated_at DateTime
-  user User @relation(fields: [username], references: [username])
+  phone_activated       Boolean  @default(false)
+  phone_activated_at    DateTime
+  user                  User     @relation(fields: [username], references: [username])
+
   @@map("contacts")
 }
 
 model LoginHistory {
-  id Int @unique @default(autoincrement())
-  username Int
-  login_time DateTime @default(now())
-  ip_address String?
-  login_os String?
+  id            Int      @unique @default(autoincrement())
+  username      Int
+  login_time    DateTime @default(now())
+  ip_address    String?
+  login_os      String?
   login_browser String?
-  user User @relation(fields: [username], references: [username])
+  user          User     @relation(fields: [username], references: [username])
+
   @@map("login_histories")
 }
 
 model Address {
-  id Int @unique @default(autoincrement())
-  username Int
-  street String
-  house String
-  apartment String?
+  id           Int     @unique @default(autoincrement())
+  username     Int
+  street       String
+  house        String
+  apartment    String?
   g_account_id String?
-  user User @relation(fields: [username], references: [username])
+  user         User    @relation(fields: [username], references: [username])
+
   @@map("addresses")
 }
 
 model Variable {
-  key String @id @unique
+  key   String @id @unique
   value String
+
   @@map("variables")
 }
