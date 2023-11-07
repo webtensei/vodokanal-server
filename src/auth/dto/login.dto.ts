@@ -1,9 +1,8 @@
-import { IsEmpty, IsInt } from 'class-validator';
+import { IsInt, IsString } from 'class-validator';
 
 export class LoginDto {
   @IsInt()
-  @IsEmpty()
   username: number;
-  @IsEmpty()
+  @IsString()
   password: string;
 }

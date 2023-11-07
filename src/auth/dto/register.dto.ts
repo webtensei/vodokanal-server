@@ -1,7 +1,7 @@
 import {
   IsEmail,
-  IsEmpty,
   IsInt,
+  IsNotEmpty,
   IsPhoneNumber,
   IsString,
   IsStrongPassword,
@@ -9,33 +9,30 @@ import {
 
 export class RegisterDto {
   @IsInt()
+  @IsNotEmpty()
   username: number;
-
-  @IsEmpty()
   @IsStrongPassword()
+  @IsNotEmpty()
   password: string;
-  @IsEmpty()
   @IsString()
+  @IsNotEmpty()
   name: string;
-  @IsEmpty()
   @IsString()
+  @IsNotEmpty()
   surname: string;
-  @IsEmpty()
   @IsString()
   patronymic?: string;
-  @IsEmpty()
+  @IsNotEmpty()
   @IsEmail()
   email: string;
-  @IsEmpty()
+  @IsNotEmpty()
   @IsPhoneNumber('RU')
   phone: string;
-  @IsEmpty()
+  @IsNotEmpty()
   @IsString()
   street: string;
-  @IsEmpty()
+  @IsNotEmpty()
   @IsString()
   house: string;
-  @IsEmpty()
-  @IsString()
   apartment?: string;
 }
