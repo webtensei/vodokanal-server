@@ -13,10 +13,11 @@ import { AuthService } from '@auth/auth.service';
 import { Tokens } from '@auth/interfaces';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { Cookie, UserAgent } from '@shared/decorators';
+import { Cookie, Public, UserAgent } from '@shared/decorators';
 
 const REFRESH_TOKEN = 'refreshtoken';
 
+@Public()
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -27,7 +28,7 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     const user = await this.authService.register(dto);
-    if (!user) {
+    if (user === null || undefined) {
       throw new BadRequestException(
         `Не получилось зарегестрировать пользователя: ${JSON.stringify(dto)}`,
       );

@@ -7,10 +7,16 @@ import { UserModule } from '@user/user.module';
 import { options } from './config';
 import { STRATEGIES } from '@auth/strategies';
 import { GUARDS } from '@auth/guards';
+import { ContactModule } from '@contact/contact.module';
 
 @Module({
   controllers: [AuthController],
   providers: [AuthService, ...STRATEGIES, ...GUARDS],
-  imports: [PassportModule, JwtModule.registerAsync(options()), UserModule],
+  imports: [
+    PassportModule,
+    JwtModule.registerAsync(options()),
+    UserModule,
+    ContactModule,
+  ],
 })
 export class AuthModule {}

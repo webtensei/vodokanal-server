@@ -56,13 +56,13 @@ model PreferredSettings {
 model Contact {
   username              Int      @unique
   email                 String
-  email_activation_code String
+  email_activation_code String?   @default("")
   email_activated       Boolean  @default(false)
-  email_activated_at    DateTime
+  email_activated_at    DateTime?
   phone                 String
-  phone_activation_code String
+  phone_activation_code String?   @default("")
   phone_activated       Boolean  @default(false)
-  phone_activated_at    DateTime
+  phone_activated_at    DateTime?
   user                  User     @relation(fields: [username], references: [username])
 
   @@map("contacts")

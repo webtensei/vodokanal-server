@@ -13,6 +13,7 @@ import { Token, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
+import { ContactService } from '@contact/contact.service';
 
 @Injectable()
 export class AuthService {
@@ -22,6 +23,7 @@ export class AuthService {
     private readonly userService: UserService, // private readonly contactService: contactService
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
+    private readonly contactService: ContactService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -35,10 +37,13 @@ export class AuthService {
       );
     }
 
-    return this.userService.create(dto).catch((err) => {
+    const newUser = await this.userService.create(dto).catch((err) => {
       this.logger.error(err);
       return null;
     });
+    const { email, email_activated, phone, phone_activated } =
+      await this.contactService.create(dto).catch();
+    return { ...newUser, email, email_activated, phone, phone_activated };
   }
 
   async login(dto: LoginDto, agent: string): Promise<Tokens> {
