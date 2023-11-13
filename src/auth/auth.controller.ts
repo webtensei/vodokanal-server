@@ -1,12 +1,14 @@
 import {
   BadRequestException,
   Body,
+  ClassSerializerInterceptor,
   Controller,
   Get,
   HttpStatus,
   Post,
   Res,
   UnauthorizedException,
+  UseInterceptors,
 } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { AuthService } from '@auth/auth.service';
@@ -14,6 +16,7 @@ import { Tokens } from '@auth/interfaces';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Cookie, Public, UserAgent } from '@shared/decorators';
+import { UserResponse } from '@user/responses';
 
 const REFRESH_TOKEN = 'refreshtoken';
 
@@ -25,29 +28,22 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('register')
   async register(@Body() dto: RegisterDto) {
     const user = await this.authService.register(dto);
     if (user === null || undefined) {
-      throw new BadRequestException(
-        `Не получилось зарегестрировать пользователя: ${JSON.stringify(dto)}`,
-      );
+      throw new BadRequestException(`Не получилось зарегестрировать пользователя: ${JSON.stringify(dto)}`);
     }
-    return { user: user };
+    return new UserResponse(user);
   }
 
   @Post('login')
-  async login(
-    @Body() dto: LoginDto,
-    @Res() res: Response,
-    @UserAgent() agent: string,
-  ) {
+  async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent: string) {
     //   тут я хочу заодно проходиться  и регать в LoginHistory (ну, в сервисе, очевидно)
     const tokens = await this.authService.login(dto, agent);
     if (!tokens) {
-      throw new BadRequestException(
-        `Не получилось войти с данными ${JSON.stringify(dto)}`,
-      );
+      throw new BadRequestException(`Не получилось войти с данными ${JSON.stringify(dto)}`);
     }
     this.setRefreshTokenToCookies(tokens, res);
     // return { accessToken: tokens.accessToken };
@@ -55,11 +51,7 @@ export class AuthController {
   }
 
   @Get('refresh')
-  async refreshTokens(
-    @Cookie(REFRESH_TOKEN) refreshToken: string,
-    @Res() res: Response,
-    @UserAgent() agent: string,
-  ) {
+  async refreshTokens(@Cookie(REFRESH_TOKEN) refreshToken: string, @Res() res: Response, @UserAgent() agent: string) {
     if (!refreshToken) {
       throw new UnauthorizedException();
     }
@@ -78,8 +70,7 @@ export class AuthController {
       httpOnly: true,
       sameSite: 'lax',
       expires: new Date(tokens.refreshToken.expired_in),
-      secure:
-        this.configService.get('NODE_ENV', 'development') === 'production',
+      secure: this.configService.get('NODE_ENV', 'development') === 'production',
       path: '/',
     });
     res.status(HttpStatus.CREATED).json({ accessToken: tokens.accessToken });

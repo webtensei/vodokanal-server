@@ -1,9 +1,4 @@
-import {
-  ConflictException,
-  Injectable,
-  Logger,
-  UnauthorizedException,
-} from '@nestjs/common';
+import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { UserService } from '@user/user.service';
 import { Tokens } from '@auth/interfaces';
@@ -32,18 +27,15 @@ export class AuthService {
       return null;
     });
     if (user) {
-      throw new ConflictException(
-        'Пользователь с таким логином уже существует.',
-      );
+      throw new ConflictException('Пользователь с таким логином уже существует.');
     }
 
     const newUser = await this.userService.create(dto).catch((err) => {
       this.logger.error(err);
       return null;
     });
-    const { email, email_activated, phone, phone_activated } =
-      await this.contactService.create(dto).catch();
-    return { ...newUser, email, email_activated, phone, phone_activated };
+    const newContacts = await this.contactService.create(dto).catch();
+    return { ...newUser, ...newContacts };
   }
 
   async login(dto: LoginDto, agent: string): Promise<Tokens> {
@@ -83,10 +75,7 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
-  private async getRefreshToken(
-    username: number,
-    agent: string,
-  ): Promise<Token> {
+  private async getRefreshToken(username: number, agent: string): Promise<Token> {
     const _token = await this.prismaService.token.findFirst({
       where: { username, user_agent: agent },
     });

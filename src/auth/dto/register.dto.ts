@@ -1,11 +1,4 @@
-import {
-  IsEmail,
-  IsInt,
-  IsNotEmpty,
-  IsPhoneNumber,
-  IsString,
-  IsStrongPassword,
-} from 'class-validator';
+import { IsEmail, IsInt, IsNotEmpty, IsPhoneNumber, IsString, IsStrongPassword } from 'class-validator';
 
 export class RegisterDto {
   @IsInt()

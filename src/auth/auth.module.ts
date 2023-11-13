@@ -12,11 +12,6 @@ import { ContactModule } from '@contact/contact.module';
 @Module({
   controllers: [AuthController],
   providers: [AuthService, ...STRATEGIES, ...GUARDS],
-  imports: [
-    PassportModule,
-    JwtModule.registerAsync(options()),
-    UserModule,
-    ContactModule,
-  ],
+  imports: [PassportModule, JwtModule.registerAsync(options()), UserModule, ContactModule],
 })
 export class AuthModule {}

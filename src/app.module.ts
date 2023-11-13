@@ -9,14 +9,7 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { AddressModule } from './address/address.module';
 
 @Module({
-  imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    UserModule,
-    PrismaModule,
-    ContactModule,
-    AuthModule,
-    AddressModule,
-  ],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, ContactModule, AuthModule, AddressModule],
   controllers: [],
   providers: [
     {

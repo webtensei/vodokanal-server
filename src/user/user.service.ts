@@ -1,7 +1,8 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
-import { User } from '@prisma/client';
+import { Prisma, User } from '@prisma/client';
 import { genSaltSync, hashSync } from 'bcrypt';
+import { connect } from 'rxjs';
 
 @Injectable()
 export class UserService {
@@ -31,11 +32,33 @@ export class UserService {
     });
   }
 
-  delete(username: number) {
+  async delete(username: number) {
+    const userExists = await this.prismaService.user.findFirst({
+      where: { username },
+    });
+
+    if (!userExists) {
+      throw new BadRequestException('Пользователь не был найден');
+    }
+
+    const modelsToDelete = ['contact', 'loginHistory', 'token', 'preferredSettings', 'address'];
+
+    for (const model of modelsToDelete) {
+      const modelName = model as keyof typeof Prisma;
+      const records = await this.prismaService[modelName].findMany({
+        where: { username },
+      });
+
+      if (records.length) {
+        await this.prismaService[modelName].deleteMany({
+          where: { username },
+        });
+      }
+    }
+
     return this.prismaService.user.delete({
-      where: {
-        username: username,
-      },
+      where: { username },
+      select: { username: true },
     });
   }
 
