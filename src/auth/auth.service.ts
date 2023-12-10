@@ -64,6 +64,7 @@ export class AuthService {
     return this.generateTokens(user, agent);
   }
 
+  /* отсюда пейлод летит на клиент */
   private async generateTokens(user: User, agent: string): Promise<Tokens> {
     const accessToken =
       `Bearer ` +
