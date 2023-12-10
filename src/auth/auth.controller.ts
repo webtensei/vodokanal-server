@@ -41,13 +41,14 @@ export class AuthController {
   @Post('login')
   async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent: string) {
     //   тут я хочу заодно проходиться  и регать в LoginHistory (ну, в сервисе, очевидно)
-    const tokens = await this.authService.login(dto, agent);
-    if (!tokens) {
+    const userdata = await this.authService.login(dto, agent);
+    if (!userdata) {
       throw new BadRequestException(`Не получилось войти с данными ${JSON.stringify(dto)}`);
     }
-    this.setRefreshTokenToCookies(tokens, res);
+
+    // не так важно то что ниже т.к. можем без этого пока что. тобеж спускаемся в сервис и там работаем
+    return this.setRefreshTokenToCookies(userdata, res);
     // return { accessToken: tokens.accessToken };
-    return tokens;
   }
 
   @Get('refresh')
@@ -73,6 +74,6 @@ export class AuthController {
       secure: this.configService.get('NODE_ENV', 'development') === 'production',
       path: '/',
     });
-    res.status(HttpStatus.CREATED).json({ accessToken: tokens.accessToken });
+    res.status(HttpStatus.CREATED).json(tokens);
   }
 }

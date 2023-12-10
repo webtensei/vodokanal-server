@@ -34,4 +34,12 @@ export class AddressService {
 
     return { ...newAddress };
   }
+
+  find(username: number) {
+    return this.prismaService.address.findMany({
+      where: {
+        username: username,
+      },
+    });
+  }
 }

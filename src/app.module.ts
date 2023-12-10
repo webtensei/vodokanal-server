@@ -7,9 +7,10 @@ import { AuthModule } from '@auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { AddressModule } from './address/address.module';
+import { GradModule } from './grad/grad.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, ContactModule, AuthModule, AddressModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, ContactModule, AuthModule, AddressModule, GradModule],
   controllers: [],
   providers: [
     {

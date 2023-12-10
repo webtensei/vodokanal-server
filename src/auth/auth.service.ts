@@ -1,7 +1,7 @@
 import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { UserService } from '@user/user.service';
-import { Tokens } from '@auth/interfaces';
+import { LoginInterface, Tokens } from '@auth/interfaces';
 import { compareSync } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Token, User } from '@prisma/client';
@@ -9,13 +9,15 @@ import { PrismaService } from '@prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
 import { ContactService } from '@contact/contact.service';
+import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
 
   constructor(
-    private readonly userService: UserService, // private readonly contactService: contactService
+    private readonly userService: UserService,
+    private readonly addressService: AddressService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
     private readonly contactService: ContactService,
@@ -38,15 +40,19 @@ export class AuthService {
     return { ...newUser, ...newContacts };
   }
 
-  async login(dto: LoginDto, agent: string): Promise<Tokens> {
-    const user = await this.userService.findOne(dto.username).catch((err) => {
+  async login(dto: LoginDto, agent: string): Promise<LoginInterface> {
+    const { password, ...user } = await this.userService.findOne(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
     });
-    if (!user || !compareSync(dto.password, user.password)) {
+    if (!user || !compareSync(dto.password, password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
-    return this.generateTokens(user, agent);
+    const tokens = await this.generateTokens(user, agent);
+    const { username, phone_activation_code, email_activation_code, ...contacts } = await this.contactService.findOne(dto.username);
+
+    const addresses = await this.addressService.find(dto.username);
+    return { ...tokens, user, contacts, addresses };
   }
 
   async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {
@@ -64,7 +70,6 @@ export class AuthService {
     return this.generateTokens(user, agent);
   }
 
-  /* отсюда пейлод летит на клиент */
   private async generateTokens(user: User, agent: string): Promise<Tokens> {
     const accessToken =
       `Bearer ` +
