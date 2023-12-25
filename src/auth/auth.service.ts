@@ -8,8 +8,6 @@ import { Token, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
-import { ContactService } from '@contact/contact.service';
-import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class AuthService {
@@ -17,10 +15,8 @@ export class AuthService {
 
   constructor(
     private readonly userService: UserService,
-    private readonly addressService: AddressService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
-    private readonly contactService: ContactService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -36,23 +32,23 @@ export class AuthService {
       this.logger.error(err);
       return null;
     });
-    const newContacts = await this.contactService.create(dto).catch();
-    return { ...newUser, ...newContacts };
+    return { ...newUser };
   }
 
   async login(dto: LoginDto, agent: string): Promise<LoginInterface> {
-    const { password, ...user } = await this.userService.findOne(dto.username).catch((err) => {
+    const existsUser = await this.userService.findOne(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
     });
-    if (!user || !compareSync(dto.password, password)) {
+
+    if (!existsUser || !compareSync(dto.password, existsUser.password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
-    const tokens = await this.generateTokens(user, agent);
-    const { username, phone_activation_code, email_activation_code, ...contacts } = await this.contactService.findOne(dto.username);
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...user } = existsUser;
 
-    const addresses = await this.addressService.find(dto.username);
-    return { ...tokens, user, contacts, addresses };
+    const tokens = await this.generateTokens(user, agent);
+    return { ...tokens, user };
   }
 
   async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {

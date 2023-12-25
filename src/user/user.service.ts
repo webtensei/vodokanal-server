@@ -1,32 +1,92 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
-import { Prisma, User } from '@prisma/client';
-import { genSaltSync, hashSync } from 'bcrypt';
+import { Prisma } from '@prisma/client';
+import { compareSync, genSaltSync, hashSync } from 'bcrypt';
+import { CreateUserDto } from '@user/dto/create-user.dto';
+import { UpdateUserContactsDto } from '@user/dto/update-user-contacts.dto';
 
 @Injectable()
 export class UserService {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(private readonly prismaService: PrismaService) {}
 
-  create(user: Partial<User>) {
-    const hashedPassword = this.hashPassword(user.password);
-    return this.prismaService.user.create({
-      data: {
-        username: user.username,
-        password: hashedPassword,
-        name: user.name,
-        surname: user.surname,
-        patronymic: user.patronymic || null,
-        role: user.role || 'VISITOR',
-      },
-    });
-  }
+  // Partial<User>
+  async create(user: CreateUserDto) {
+    try {
+      const hashedPassword = this.hashPassword(user.password);
 
-  findAll() {}
+      const createdUser = await this.prismaService.user.create({
+        data: {
+          username: user.username,
+          password: hashedPassword,
+          name: user.name,
+          surname: user.surname,
+          patronymic: user.patronymic || null,
+          role: user.role || 'VISITOR',
+        },
+      });
+
+      const createdContact = await this.prismaService.contact.create({
+        data: {
+          phone: user.phone,
+          email: user.email,
+          user: { connect: { username: +user.username } },
+        },
+      });
+
+      return { ...createdUser, ...createdContact };
+    } catch (error) {
+      console.error('Error creating user or contact:', error);
+      throw new BadRequestException('Пользователь уже существует');
+    }
+  }
 
   findOne(username: number) {
     return this.prismaService.user.findFirst({
       where: {
         username: username,
+      },
+      include: {
+        contacts: true,
+        addresses: true,
+        preferred_settings: true,
+      },
+    });
+  }
+
+  async findAll() {
+    return this.prismaService.user.findMany({
+      include: {
+        contacts: true,
+        addresses: true,
+        preferred_settings: true,
+      },
+    });
+  }
+
+  async updateContacts(contacts: UpdateUserContactsDto) {
+    const existsUser = await this.findOne(contacts.username).catch((err) => {
+      this.logger.error(err);
+      return null;
+    });
+
+    if (!existsUser || !compareSync(contacts.password, existsUser.password)) {
+      throw new UnauthorizedException('Неверный логин или пароль.');
+    }
+
+    const newEmail = contacts.email !== existsUser.contacts.email;
+    const newPhone = contacts.phone !== existsUser.contacts.phone;
+
+    return this.prismaService.contact.update({
+      where: { username: contacts.username },
+      data: {
+        email: contacts.email,
+        phone: contacts.phone,
+        email_activated: newEmail ? false : existsUser.contacts.email_activated,
+        phone_activated: newPhone ? false : existsUser.contacts.phone_activated,
+        email_activated_at: newEmail ? null : existsUser.contacts.email_activated_at,
+        phone_activated_at: newPhone ? null : existsUser.contacts.phone_activated_at,
       },
     });
   }

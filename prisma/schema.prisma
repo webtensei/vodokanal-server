@@ -19,9 +19,71 @@ model User {
   addresses          Address[]
   login_histories    LoginHistory[]
   token              Token[]
-  role               Role               @default(VISITOR)
+  role               Role              @default(USER)
 
   @@map("users")
+}
+
+enum Role {
+  VISITOR
+  USER
+  ADMIN
+  OWNER
+
+  @@map("roles")
+}
+
+model Contact {
+  username              Int       @unique
+  email                 String
+  email_activated       Boolean   @default(false)
+  email_activated_at    DateTime?
+  phone                 String
+  phone_activated       Boolean   @default(false)
+  phone_activated_at    DateTime?
+  user                  User      @relation(fields: [username], references: [username])
+
+  @@map("contacts")
+}
+
+model LoginHistory {
+  id         Int      @unique @default(autoincrement())
+  username   Int
+  login_time DateTime @default(now())
+  ip_address String
+  user_agent String
+  user       User     @relation(fields: [username], references: [username])
+
+  @@map("login_histories")
+}
+
+model Address {
+  id        Int         @unique @default(autoincrement())
+  username  Int
+  street    String
+  house     String
+  apartment String?
+  type      AddressType
+  system_id String
+  user      User        @relation(fields: [username], references: [username])
+
+  @@map("addresses")
+}
+
+enum AddressType {
+  GRAD
+  UKEK
+
+  @@map("address_type")
+}
+
+model PreferredSettings {
+  username          Int     @unique
+  preferred_theme   String  @default("dark")
+  preferred_address String?
+  user              User    @relation(fields: [username], references: [username])
+
+  @@map("preferred_settings")
 }
 
 model Token {
@@ -32,64 +94,6 @@ model Token {
   user       User     @relation(fields: [username], references: [username])
 
   @@map("tokens")
-}
-
-enum Role {
-  VISITOR
-  CITIZEN
-  BUSINESS
-  ADMIN
-  SWE
-  OWNER
-
-  @@map("roles")
-}
-
-model PreferredSettings {
-  username        Int    @unique
-  preferred_theme String @default("dark")
-  user            User   @relation(fields: [username], references: [username])
-
-  @@map("preferred_settings")
-}
-
-model Contact {
-  username              Int      @unique
-  email                 String
-  email_activation_code String?   @default("")
-  email_activated       Boolean  @default(false)
-  email_activated_at    DateTime?
-  phone                 String
-  phone_activation_code String?   @default("")
-  phone_activated       Boolean  @default(false)
-  phone_activated_at    DateTime?
-  user                  User     @relation(fields: [username], references: [username])
-
-  @@map("contacts")
-}
-
-model LoginHistory {
-  id            Int      @unique @default(autoincrement())
-  username      Int
-  login_time    DateTime @default(now())
-  ip_address    String?
-  login_os      String?
-  login_browser String?
-  user          User     @relation(fields: [username], references: [username])
-
-  @@map("login_histories")
-}
-
-model Address {
-  id           Int     @unique @default(autoincrement())
-  username     Int
-  street       String
-  house        String
-  apartment    String?
-  g_account_id String?
-  user         User    @relation(fields: [username], references: [username])
-
-  @@map("addresses")
 }
 
 model Variable {

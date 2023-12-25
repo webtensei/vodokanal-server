@@ -38,6 +38,7 @@ export class AuthController {
     return new UserResponse(user);
   }
 
+  @UseInterceptors(ClassSerializerInterceptor)
   @Post('login')
   async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent: string) {
     //   тут я хочу заодно проходиться  и регать в LoginHistory (ну, в сервисе, очевидно)
@@ -45,7 +46,6 @@ export class AuthController {
     if (!userdata) {
       throw new BadRequestException(`Не получилось войти с данными ${JSON.stringify(dto)}`);
     }
-
     // не так важно то что ниже т.к. можем без этого пока что. тобеж спускаемся в сервис и там работаем
     return this.setRefreshTokenToCookies(userdata, res);
     // return { accessToken: tokens.accessToken };

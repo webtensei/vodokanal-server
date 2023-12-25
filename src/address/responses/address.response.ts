@@ -1,12 +1,13 @@
-import { Address } from '@prisma/client';
+import { $Enums, Address } from '@prisma/client';
 
 export class AddressResponse implements Address {
   apartment: string | null;
-  g_account_id: string | null;
   house: string;
   id: number;
   street: string;
   username: number;
+  system_id: string;
+  type: $Enums.AddressType;
 
   constructor(address: Address) {
     Object.assign(this, address);
