@@ -15,7 +15,7 @@ import { AuthService } from '@auth/auth.service';
 import { Tokens } from '@auth/interfaces';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
-import { Cookie, Public, UserAgent } from '@shared/decorators';
+import { Cookie, IpDoor, Public, UserAgent } from '@shared/decorators';
 import { UserResponse } from '@user/responses';
 
 const REFRESH_TOKEN = 'refreshtoken';
@@ -40,15 +40,12 @@ export class AuthController {
 
   @UseInterceptors(ClassSerializerInterceptor)
   @Post('login')
-  async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent: string) {
-    //   тут я хочу заодно проходиться  и регать в LoginHistory (ну, в сервисе, очевидно)
-    const userdata = await this.authService.login(dto, agent);
+  async login(@Body() dto: LoginDto, @Res() res: Response, @UserAgent() agent: string, @IpDoor() ip: string) {
+    const userdata = await this.authService.login(dto, agent, ip);
     if (!userdata) {
       throw new BadRequestException(`Не получилось войти с данными ${JSON.stringify(dto)}`);
     }
-    // не так важно то что ниже т.к. можем без этого пока что. тобеж спускаемся в сервис и там работаем
     return this.setRefreshTokenToCookies(userdata, res);
-    // return { accessToken: tokens.accessToken };
   }
 
   @Get('refresh')

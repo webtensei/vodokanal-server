@@ -8,6 +8,7 @@ import { Token, User } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
+import { LoggerService } from '../logger/logger.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
+    private readonly loggerService: LoggerService,
   ) {}
 
   async register(dto: RegisterDto) {
@@ -35,7 +37,7 @@ export class AuthService {
     return { ...newUser };
   }
 
-  async login(dto: LoginDto, agent: string): Promise<LoginInterface> {
+  async login(dto: LoginDto, agent: string, ip: string): Promise<LoginInterface> {
     const existsUser = await this.userService.findOne(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
@@ -44,6 +46,13 @@ export class AuthService {
     if (!existsUser || !compareSync(dto.password, existsUser.password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
+
+    await this.loggerService.serviceLogin({
+      username: existsUser.username,
+      ip_address: ip,
+      user_agent: agent,
+    });
+
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...user } = existsUser;
 

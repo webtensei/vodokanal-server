@@ -25,14 +25,14 @@ export class AddressService {
       throw new ConflictException('Данный адрес уже зарегистрирован в системе. Обратитесь в поддержку');
     }
 
-    const newAddress = await this.prismaService.address.create({
-      data: {
-        ...address,
-        apartment: address.apartment || null,
-      },
-    });
-
-    return { ...newAddress };
+    // const newAddress = await this.prismaService.address.create({
+    //   data: {
+    //     ...address,
+    //     apartment: address.apartment || null,
+    //   },
+    // });
+    //
+    // return { ...newAddress };
   }
 
   find(username: number) {
