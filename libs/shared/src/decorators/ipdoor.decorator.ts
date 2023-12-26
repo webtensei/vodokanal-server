@@ -21,7 +21,7 @@ export const IpDoor = createParamDecorator((data: unknown, ctx: ExecutionContext
   }
 
   // Если заголовок x-forwarded-for отсутствует, возвращаем IP-адрес из объекта запроса
-  // Обрати внимание, что request.ip может вернуть '::ffff:127.0.0.1' в некоторых случаях
+  // Обрати внимание, что request.ip может вернуть '::ffff:127.0.0.1' в НЕКОТОРЫХ случаях
   // Это IPv6-адрес, представленный в виде IPv4-адреса. Можно преобразовать его, это мы и делаем функцией convertIpv6ToIpv4.
   return convertIpv6ToIpv4(request.ip);
 });
