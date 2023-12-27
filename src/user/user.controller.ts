@@ -1,8 +1,9 @@
 import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, ParseIntPipe, Post, Put, UseInterceptors } from '@nestjs/common';
 import { UserService } from '@user/user.service';
 import { ComplexUserResponse, UserResponse } from '@user/responses';
-import { Public } from '@shared/decorators';
+import { CurrentUser, Public } from '@shared/decorators';
 import { UpdateUserContactsDto } from '@user/dto/update-user-contacts.dto';
+import { JwtPayload } from '@auth/interfaces';
 
 @Controller('user')
 export class UserController {
@@ -35,8 +36,12 @@ export class UserController {
     return this.userService.updateContacts(dto);
   }
 
+  // @Delete('/address')
+  // async deleteUserAddress(@Body() dto: DeleteAddressDto) {
+  //   return this.userService.deleteAddress(dto);
+  // }
   @Delete(':username')
-  async deleteUser(@Param('username', ParseIntPipe) username: number) {
-    return this.userService.delete(+username);
+  async deleteUser(@Param('username', ParseIntPipe) username: number, @CurrentUser() currentUser: JwtPayload) {
+    return this.userService.delete(username, currentUser);
   }
 }

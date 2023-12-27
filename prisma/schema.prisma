@@ -41,7 +41,7 @@ model Contact {
   phone                 String
   phone_activated       Boolean   @default(false)
   phone_activated_at    DateTime?
-  user                  User      @relation(fields: [username], references: [username])
+  user                  User      @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("contacts")
 }
@@ -52,7 +52,7 @@ model LoginHistory {
   login_time DateTime @default(now())
   ip_address String
   user_agent String
-  user       User     @relation(fields: [username], references: [username])
+  user       User     @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("login_histories")
 }
@@ -65,14 +65,14 @@ model Address {
   apartment String?
   type      AddressType
   system_id String
-  user      User        @relation(fields: [username], references: [username])
+  user      User        @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("addresses")
 }
 
 enum AddressType {
-  GRAD
-  UKEK
+  CITIZEN
+  BUSINESS
 
   @@map("address_type")
 }
@@ -81,7 +81,7 @@ model PreferredSettings {
   username          Int     @unique
   preferred_theme   String  @default("dark")
   preferred_address String?
-  user              User    @relation(fields: [username], references: [username])
+  user              User    @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("preferred_settings")
 }
@@ -91,7 +91,7 @@ model Token {
   expired_in DateTime
   username   Int
   user_agent String
-  user       User     @relation(fields: [username], references: [username])
+  user       User     @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("tokens")
 }

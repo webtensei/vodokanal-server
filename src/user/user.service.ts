@@ -1,9 +1,10 @@
-import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
-import { Prisma } from '@prisma/client';
+import { Prisma, Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserContactsDto } from '@user/dto/update-user-contacts.dto';
+import { JwtPayload } from '@auth/interfaces';
 
 @Injectable()
 export class UserService {
@@ -66,14 +67,7 @@ export class UserService {
   }
 
   async updateContacts(contacts: UpdateUserContactsDto) {
-    const existsUser = await this.findOne(contacts.username).catch((err) => {
-      this.logger.error(err);
-      return null;
-    });
-
-    if (!existsUser || !compareSync(contacts.password, existsUser.password)) {
-      throw new UnauthorizedException('Неверный логин или пароль.');
-    }
+    const existsUser = await this.checkUserCredentials(contacts.username, contacts.password);
 
     const newEmail = contacts.email !== existsUser.contacts.email;
     const newPhone = contacts.phone !== existsUser.contacts.phone;
@@ -91,7 +85,10 @@ export class UserService {
     });
   }
 
-  async delete(username: number) {
+  async delete(username: number, currentUser: JwtPayload) {
+    if (currentUser.username !== username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
     const userExists = await this.prismaService.user.findFirst({
       where: { username },
     });
@@ -119,6 +116,18 @@ export class UserService {
       where: { username },
       select: { username: true },
     });
+  }
+
+  async checkUserCredentials(username: number, password: string) {
+    const user = await this.findOne(username).catch((err) => {
+      this.logger.error(err);
+      return null;
+    });
+
+    if (!user || !compareSync(password, user.password)) {
+      throw new UnauthorizedException('Неверный логин или пароль.');
+    }
+    return user;
   }
 
   private hashPassword(password: string) {
