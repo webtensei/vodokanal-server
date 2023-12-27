@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
-import { Prisma, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { UpdateUserContactsDto } from '@user/dto/update-user-contacts.dto';
@@ -95,21 +95,6 @@ export class UserService {
 
     if (!userExists) {
       throw new BadRequestException('Пользователь не был найден');
-    }
-
-    const modelsToDelete = ['contact', 'loginHistory', 'token', 'preferredSettings', 'address'];
-
-    for (const model of modelsToDelete) {
-      const modelName = model as keyof typeof Prisma;
-      const records = await this.prismaService[modelName].findMany({
-        where: { username },
-      });
-
-      if (records.length) {
-        await this.prismaService[modelName].deleteMany({
-          where: { username },
-        });
-      }
     }
 
     return this.prismaService.user.delete({
