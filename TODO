@@ -6,3 +6,32 @@
 
 user.controller: 17 строка   @Public() изменить на доступ только админу
 
+посмотреть где юзать парамы а где бади в контроллерах
+
+address controller: create, смотреть респонс от града, если овнер является создателем акка то пускать дальше
+
+
+
+
+
+
+
+
+
+ADMIN RESOURCE:
+ @Put('/updateOwner')
+  async updateAddressOwner(@Body() addressId: number, newOwner: number, @CurrentUser('role') userRole: JwtPayload) {
+    const response = await this.addressService.updateOwner(addressId, newOwner, userRole);
+    return new AddressResponse(response);
+  }
+
+  Ближайшие задачи:
+  1. Анализ и рефактор ADDRESS и USER модулей, полностью.
+    1.1 Начать с USER. Выписать что принимаем, что отдаем, какие гварды используем
+    1.2 Проделать такую же работу для ADDRESS
+  2. Требуется реализовать PAYMENT модуль. Разработать план.
+  3. Требуется реализовать [придумай название модуля] для работы с изменением, подтверждением, удалением номера и почты. CONTACTS MODULE?
+    3.1 Подумай о том, как правильно реализовать подтверждение данных
+
+  ДЛЯ СЕБЯ:
+  1. Не стой на месте, у тебя всё получится

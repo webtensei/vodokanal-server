@@ -66,8 +66,14 @@ export class UserService {
     });
   }
 
-  async updateContacts(contacts: UpdateUserContactsDto) {
-    const existsUser = await this.checkUserCredentials(contacts.username, contacts.password);
+  async updateContacts(contacts: UpdateUserContactsDto, currentUser: JwtPayload) {
+    const existsUser = await this.checkUserCredentials(
+      {
+        username: contacts.username,
+        password: contacts.password,
+      },
+      currentUser,
+    );
 
     const newEmail = contacts.email !== existsUser.contacts.email;
     const newPhone = contacts.phone !== existsUser.contacts.phone;
@@ -86,16 +92,7 @@ export class UserService {
   }
 
   async delete(username: number, currentUser: JwtPayload) {
-    if (currentUser.username !== username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
-      throw new ForbiddenException();
-    }
-    const userExists = await this.prismaService.user.findFirst({
-      where: { username },
-    });
-
-    if (!userExists) {
-      throw new BadRequestException('Пользователь не был найден');
-    }
+    await this.checkUserCredentials({ username }, currentUser);
 
     return this.prismaService.user.delete({
       where: { username },
@@ -103,13 +100,17 @@ export class UserService {
     });
   }
 
-  async checkUserCredentials(username: number, password: string) {
-    const user = await this.findOne(username).catch((err) => {
+  async checkUserCredentials(userdata: { username: number; password?: string }, currentUser: JwtPayload) {
+    if (currentUser.username !== userdata.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
+
+    const user = await this.findOne(userdata.username).catch((err) => {
       this.logger.error(err);
       return null;
     });
 
-    if (!user || !compareSync(password, user.password)) {
+    if (!user || !!userdata.password ? !compareSync(userdata.password, user.password) : false) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
     return user;

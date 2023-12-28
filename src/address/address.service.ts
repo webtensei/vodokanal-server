@@ -1,8 +1,9 @@
-import { BadRequestException, ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { PrismaService } from '@prisma/prisma.service';
 import { UserService } from '@user/user.service';
-import { DeleteAddressDto } from '@user/dto/delete-address.dto';
+import { JwtPayload } from '@auth/interfaces';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class AddressService {
@@ -11,7 +12,10 @@ export class AddressService {
     private readonly userService: UserService,
   ) {}
 
-  async create(address: CreateAddressDto) {
+  async create(address: CreateAddressDto, currentUser: JwtPayload) {
+    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
     const existsAddress = await this.prismaService.address.findFirst({
       where: {
         street: address.street,
@@ -37,33 +41,36 @@ export class AddressService {
       },
     });
   }
-  async deleteAddress(address: DeleteAddressDto) {
-    await this.userService.checkUserCredentials(address.username, address.password);
 
-    const existsAddress = await this.find(address.addressId);
-    if (!existsAddress) {
-      throw new BadRequestException('Адрес не найден.');
-    }
-    if (existsAddress.username !== address.username) {
-      throw new BadRequestException('Адрес вам не принадлежит.');
-    }
+  async delete(addressId: number, currentUser: JwtPayload) {
+    await this.checkAddressCredentials(addressId, currentUser);
 
-    return this.delete(address.addressId);
-  }
-
-  find(addressId: number) {
-    return this.prismaService.address.findFirst({
-      where: {
-        id: addressId,
-      },
-    });
-  }
-
-  delete(addressId: number) {
     return this.prismaService.address.delete({
       where: {
         id: addressId,
       },
     });
+  }
+
+  async findOne(addressId: number, currentUser: JwtPayload) {
+    return this.checkAddressCredentials(addressId, currentUser);
+  }
+
+  private async checkAddressCredentials(addressId: number, currentUser: JwtPayload) {
+    const address = await this.prismaService.address.findFirst({
+      where: {
+        id: +addressId,
+      },
+    });
+
+    if (!address) {
+      throw new BadRequestException('Адрес не найден.');
+    }
+
+    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
+
+    return address;
   }
 }

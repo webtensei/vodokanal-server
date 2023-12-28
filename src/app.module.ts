@@ -8,9 +8,10 @@ import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { AddressModule } from './address/address.module';
 import { GradModule } from './grad/grad.module';
 import { LoggerModule } from './logger/logger.module';
+import { ContactsModule } from './contacts/contacts.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, AuthModule, AddressModule, GradModule, LoggerModule],
+  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, AuthModule, AddressModule, GradModule, LoggerModule, ContactsModule],
   controllers: [],
   providers: [
     {
