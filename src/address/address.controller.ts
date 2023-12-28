@@ -1,4 +1,4 @@
-import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, Post, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, ParseIntPipe, Post, UseInterceptors } from '@nestjs/common';
 import { AddressService } from './address.service';
 import { AddressResponse } from './responses';
 import { CreateAddressDto } from './dto/create-address.dto';
@@ -17,13 +17,13 @@ export class AddressController {
   }
 
   @Get(':addressId')
-  async findAddress(@Param('addressId') addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async findAddress(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
     const response = await this.addressService.findOne(addressId, currentUser);
     return new AddressResponse(response);
   }
 
   @Delete(':id')
-  async deleteAddress(@Param('addressId') addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async deleteAddress(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
     const response = await this.addressService.delete(addressId, currentUser);
     return new AddressResponse(response);
   }

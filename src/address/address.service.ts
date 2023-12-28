@@ -1,16 +1,12 @@
 import { BadRequestException, ConflictException, ForbiddenException, Injectable } from '@nestjs/common';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { PrismaService } from '@prisma/prisma.service';
-import { UserService } from '@user/user.service';
 import { JwtPayload } from '@auth/interfaces';
 import { Role } from '@prisma/client';
 
 @Injectable()
 export class AddressService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async create(address: CreateAddressDto, currentUser: JwtPayload) {
     if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
@@ -59,7 +55,7 @@ export class AddressService {
   private async checkAddressCredentials(addressId: number, currentUser: JwtPayload) {
     const address = await this.prismaService.address.findFirst({
       where: {
-        id: +addressId,
+        id: addressId,
       },
     });
 
