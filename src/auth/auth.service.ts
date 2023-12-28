@@ -22,7 +22,7 @@ export class AuthService {
   ) {}
 
   async register(dto: RegisterDto) {
-    const user = await this.userService.findOne(dto.username).catch((err) => {
+    const user = await this.userService.find(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
     });
@@ -38,7 +38,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, agent: string, ip: string): Promise<LoginInterface> {
-    const existsUser = await this.userService.findOne(dto.username).catch((err) => {
+    const existsUser = await this.userService.find(dto.username).catch((err) => {
       this.logger.error(err);
       return null;
     });
@@ -71,7 +71,7 @@ export class AuthService {
     if (new Date(token.expired_in) < new Date()) {
       throw new UnauthorizedException();
     }
-    const user = await this.userService.findOne(token.username);
+    const user = await this.userService.find(token.username);
     return this.generateTokens(user, agent);
   }
 

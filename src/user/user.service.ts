@@ -3,7 +3,6 @@ import { PrismaService } from '@prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
 import { CreateUserDto } from '@user/dto/create-user.dto';
-import { UpdateUserContactsDto } from '@user/dto/update-user-contacts.dto';
 import { JwtPayload } from '@auth/interfaces';
 
 @Injectable()
@@ -43,7 +42,11 @@ export class UserService {
     }
   }
 
-  findOne(username: number) {
+  findOne(username: number, currentUser: JwtPayload) {
+    return this.checkUserCredentials({ username }, currentUser, true);
+  }
+
+  find(username: number) {
     return this.prismaService.user.findFirst({
       where: {
         username: username,
@@ -56,7 +59,10 @@ export class UserService {
     });
   }
 
-  async findAll() {
+  async findAll(userRole: Role) {
+    if (!userRole.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
     return this.prismaService.user.findMany({
       include: {
         contacts: true,
@@ -66,33 +72,8 @@ export class UserService {
     });
   }
 
-  async updateContacts(contacts: UpdateUserContactsDto, currentUser: JwtPayload) {
-    const existsUser = await this.checkUserCredentials(
-      {
-        username: contacts.username,
-        password: contacts.password,
-      },
-      currentUser,
-    );
-
-    const newEmail = contacts.email !== existsUser.contacts.email;
-    const newPhone = contacts.phone !== existsUser.contacts.phone;
-
-    return this.prismaService.contact.update({
-      where: { username: contacts.username },
-      data: {
-        email: contacts.email,
-        phone: contacts.phone,
-        email_activated: newEmail ? false : existsUser.contacts.email_activated,
-        phone_activated: newPhone ? false : existsUser.contacts.phone_activated,
-        email_activated_at: newEmail ? null : existsUser.contacts.email_activated_at,
-        phone_activated_at: newPhone ? null : existsUser.contacts.phone_activated_at,
-      },
-    });
-  }
-
   async delete(username: number, currentUser: JwtPayload) {
-    await this.checkUserCredentials({ username }, currentUser);
+    await this.checkUserCredentials({ username }, currentUser, true);
 
     return this.prismaService.user.delete({
       where: { username },
@@ -100,19 +81,22 @@ export class UserService {
     });
   }
 
-  async checkUserCredentials(userdata: { username: number; password?: string }, currentUser: JwtPayload) {
-    if (currentUser.username !== userdata.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+  // НУЖНО СДЕЛАТЬ НОРМАЛЬНУЮ ТИПИЗАЦИЮ
+  async checkUserCredentials(credentials: { username: number; password?: string }, currentUser: JwtPayload, withoutPassword: boolean = false) {
+    const isAdmin = currentUser.role.includes(Role.ADMIN || Role.OWNER);
+
+    if (currentUser.username !== credentials.username && !isAdmin) {
       throw new ForbiddenException();
     }
 
-    const user = await this.findOne(userdata.username).catch((err) => {
-      this.logger.error(err);
-      return null;
-    });
+    const user = await this.find(credentials.username);
 
-    if (!user || !!userdata.password ? !compareSync(userdata.password, user.password) : false) {
+    const isPasswordEquals = withoutPassword || (!!credentials.password && compareSync(credentials.password, user.password));
+
+    if (!user || (isAdmin ? false : !isPasswordEquals)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
+
     return user;
   }
 
