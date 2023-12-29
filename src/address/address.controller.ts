@@ -9,10 +9,11 @@ import { JwtPayload } from '@auth/interfaces';
 export class AddressController {
   constructor(private readonly addressService: AddressService) {}
 
+  // Role guard here
   @UseInterceptors(ClassSerializerInterceptor)
   @Post()
-  async createAddress(@Body() address: CreateAddressDto, @CurrentUser() currentUser: JwtPayload) {
-    const response = await this.addressService.create(address, currentUser);
+  async createAddress(@Body() address: CreateAddressDto) {
+    const response = await this.addressService.create(address);
     return new AddressResponse(response);
   }
 

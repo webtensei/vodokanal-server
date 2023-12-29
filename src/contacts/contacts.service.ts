@@ -1,8 +1,9 @@
-import { Injectable } from '@nestjs/common';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { JwtPayload } from '@auth/interfaces';
 import { PrismaService } from '@prisma/prisma.service';
 import { UserService } from '@user/user.service';
 import { UpdateUserContactsDto } from './dto/update-contacts.dto';
+import { CreateContactsDto } from './dto/create-contacts.dto';
 
 @Injectable()
 export class ContactsService {
@@ -10,6 +11,21 @@ export class ContactsService {
     private readonly prismaService: PrismaService,
     private readonly userService: UserService,
   ) {}
+
+  async create(userContacts: CreateContactsDto) {
+    try {
+      return this.prismaService.contact.create({
+        data: {
+          phone: userContacts.phone,
+          email: userContacts.email,
+          user: { connect: { username: +userContacts.username } },
+        },
+      });
+    } catch (error) {
+      console.error('Error creating contacts:', error);
+      throw new ConflictException('Не удалось создать контактные данные.');
+    }
+  }
 
   async updateContacts(contacts: UpdateUserContactsDto, currentUser: JwtPayload) {
     const existsUser = await this.userService.checkUserCredentials(
@@ -34,5 +50,9 @@ export class ContactsService {
         phone_activated_at: newPhone ? null : existsUser.contacts.phone_activated_at,
       },
     });
+  }
+
+  async delete(username: number) {
+    return this.prismaService.contact.delete({ where: { username } });
   }
 }

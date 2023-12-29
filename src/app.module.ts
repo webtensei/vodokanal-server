@@ -9,9 +9,20 @@ import { AddressModule } from './address/address.module';
 import { GradModule } from './grad/grad.module';
 import { LoggerModule } from './logger/logger.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { PaymentModule } from './payment/payment.module';
 
 @Module({
-  imports: [ConfigModule.forRoot({ isGlobal: true }), UserModule, PrismaModule, AuthModule, AddressModule, GradModule, LoggerModule, ContactsModule],
+  imports: [
+    ConfigModule.forRoot({ isGlobal: true }),
+    UserModule,
+    PrismaModule,
+    AuthModule,
+    AddressModule,
+    GradModule,
+    LoggerModule,
+    ContactsModule,
+    PaymentModule,
+  ],
   controllers: [],
   providers: [
     {

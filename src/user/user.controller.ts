@@ -4,7 +4,6 @@ import { ComplexUserResponse, UserResponse } from '@user/responses';
 import { CurrentUser } from '@shared/decorators';
 import { JwtPayload } from '@auth/interfaces';
 import { CreateUserDto } from '@user/dto/create-user.dto';
-import { Role } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
@@ -24,17 +23,17 @@ export class UserController {
     return new UserResponse(user);
   }
 
-  // patched 28.12
+  // ROLE GUARD HERE
   @UseInterceptors(ClassSerializerInterceptor)
   @Get()
-  async findAllUsers(@CurrentUser('role') userRole: Role) {
-    const users = await this.userService.findAll(userRole);
+  async findAllUsers() {
+    const users = await this.userService.findAll();
     return users.map((user) => new ComplexUserResponse(user));
   }
 
-  // patched 28.12
+  // ROLE GUARD HERE
   @Delete(':username')
-  async deleteUser(@Param('username', ParseIntPipe) username: number, @CurrentUser() currentUser: JwtPayload) {
-    return this.userService.delete(username, currentUser);
+  async deleteUser(@Param('username', ParseIntPipe) username: number) {
+    return this.userService.delete(username);
   }
 }

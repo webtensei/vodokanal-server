@@ -2,7 +2,7 @@
 CREATE TYPE "roles" AS ENUM ('VISITOR', 'USER', 'ADMIN', 'OWNER');
 
 -- CreateEnum
-CREATE TYPE "address_type" AS ENUM ('GRAD', 'UKEK');
+CREATE TYPE "address_type" AS ENUM ('CITIZEN', 'BUSINESS');
 
 -- CreateTable
 CREATE TABLE "users" (
@@ -56,6 +56,17 @@ CREATE TABLE "preferred_settings" (
 );
 
 -- CreateTable
+CREATE TABLE "payments" (
+    "id" SERIAL NOT NULL,
+    "addressId" INTEGER NOT NULL,
+    "metters" TEXT[],
+    "amount" TEXT NOT NULL,
+    "payer" TEXT NOT NULL,
+    "payment_id" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- CreateTable
 CREATE TABLE "tokens" (
     "token" TEXT NOT NULL,
     "expired_in" TIMESTAMP(3) NOT NULL,
@@ -87,22 +98,28 @@ CREATE UNIQUE INDEX "addresses_id_key" ON "addresses"("id");
 CREATE UNIQUE INDEX "preferred_settings_username_key" ON "preferred_settings"("username");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "payments_id_key" ON "payments"("id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "tokens_token_key" ON "tokens"("token");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "variables_key_key" ON "variables"("key");
 
 -- AddForeignKey
-ALTER TABLE "contacts" ADD CONSTRAINT "contacts_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "contacts" ADD CONSTRAINT "contacts_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "login_histories" ADD CONSTRAINT "login_histories_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "login_histories" ADD CONSTRAINT "login_histories_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "addresses" ADD CONSTRAINT "addresses_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "addresses" ADD CONSTRAINT "addresses_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "preferred_settings" ADD CONSTRAINT "preferred_settings_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "preferred_settings" ADD CONSTRAINT "preferred_settings_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "tokens" ADD CONSTRAINT "tokens_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "payments" ADD CONSTRAINT "payments_addressId_fkey" FOREIGN KEY ("addressId") REFERENCES "addresses"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "tokens" ADD CONSTRAINT "tokens_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;

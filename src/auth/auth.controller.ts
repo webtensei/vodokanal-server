@@ -16,7 +16,6 @@ import { Tokens } from '@auth/interfaces';
 import { Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import { Cookie, IpDoor, Public, UserAgent } from '@shared/decorators';
-import { UserResponse } from '@user/responses';
 
 const REFRESH_TOKEN = 'refreshtoken';
 
@@ -35,7 +34,7 @@ export class AuthController {
     if (user === null || undefined) {
       throw new BadRequestException(`Не получилось зарегестрировать пользователя: ${JSON.stringify(dto)}`);
     }
-    return new UserResponse(user);
+    return user;
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

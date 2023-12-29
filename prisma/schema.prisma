@@ -19,7 +19,7 @@ model User {
   addresses          Address[]
   login_histories    LoginHistory[]
   token              Token[]
-  role               Role              @default(USER)
+  role               Role               @default(USER)
 
   @@map("users")
 }
@@ -34,14 +34,14 @@ enum Role {
 }
 
 model Contact {
-  username              Int       @unique
-  email                 String
-  email_activated       Boolean   @default(false)
-  email_activated_at    DateTime?
-  phone                 String
-  phone_activated       Boolean   @default(false)
-  phone_activated_at    DateTime?
-  user                  User      @relation(fields: [username], references: [username], onDelete: Cascade)
+  username           Int       @unique
+  email              String
+  email_activated    Boolean   @default(false)
+  email_activated_at DateTime?
+  phone              String
+  phone_activated    Boolean   @default(false)
+  phone_activated_at DateTime?
+  user               User      @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("contacts")
 }
@@ -65,6 +65,7 @@ model Address {
   apartment String?
   type      AddressType
   system_id String
+  payments  Payment[]
   user      User        @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("addresses")
@@ -84,6 +85,19 @@ model PreferredSettings {
   user              User    @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("preferred_settings")
+}
+
+model Payment {
+  id         Int      @unique @default(autoincrement())
+  addressId  Int
+  metters    String[]
+  amount     String
+  payer      String
+  payment_id String
+  created_at DateTime @default(now())
+  addr       Address  @relation(fields: [addressId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
 }
 
 model Token {

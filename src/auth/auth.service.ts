@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { UserService } from '@user/user.service';
 import { LoginInterface, Tokens } from '@auth/interfaces';
@@ -9,6 +9,8 @@ import { PrismaService } from '@prisma/prisma.service';
 import { v4 } from 'uuid';
 import { add } from 'date-fns';
 import { LoggerService } from '../logger/logger.service';
+import { ContactsService } from '../contacts/contacts.service';
+import { AddressService } from '../address/address.service';
 
 @Injectable()
 export class AuthService {
@@ -16,25 +18,38 @@ export class AuthService {
 
   constructor(
     private readonly userService: UserService,
+    private readonly contactsService: ContactsService,
+    private readonly addressService: AddressService,
     private readonly jwtService: JwtService,
     private readonly prismaService: PrismaService,
     private readonly loggerService: LoggerService,
   ) {}
 
   async register(dto: RegisterDto) {
-    const user = await this.userService.find(dto.username).catch((err) => {
-      this.logger.error(err);
+    const user = await this.userService.find(dto.username).catch(() => {
       return null;
     });
+
     if (user) {
       throw new ConflictException('Пользователь с таким логином уже существует.');
     }
 
-    const newUser = await this.userService.create(dto).catch((err) => {
-      this.logger.error(err);
+    const address = await this.addressService.findByAddress(dto.street, dto.house, dto.apartment).catch(() => {
       return null;
     });
-    return { ...newUser };
+
+    if (address) {
+      throw new ConflictException('Пользователь с таким адресом уже существует.');
+    }
+
+    await this.userService.create(dto);
+    await this.contactsService.create(dto);
+    await this.addressService.create(dto).catch((err) => {
+      this.userService.delete(dto.username);
+      throw err;
+    });
+
+    return { statusCode: HttpStatus.CREATED, message: 'Created' };
   }
 
   async login(dto: LoginDto, agent: string, ip: string): Promise<LoginInterface> {

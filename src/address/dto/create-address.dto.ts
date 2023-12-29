@@ -12,5 +12,5 @@ export class CreateAddressDto {
   house: string;
   apartment?: string;
   @IsEnum(AddressType)
-  type: AddressType;
+  buildingType: AddressType;
 }

@@ -1,4 +1,4 @@
-import { BadRequestException, ForbiddenException, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
@@ -7,8 +7,6 @@ import { JwtPayload } from '@auth/interfaces';
 
 @Injectable()
 export class UserService {
-  private readonly logger = new Logger(UserService.name);
-
   constructor(private readonly prismaService: PrismaService) {}
 
   // Partial<User>
@@ -16,29 +14,19 @@ export class UserService {
     try {
       const hashedPassword = this.hashPassword(user.password);
 
-      const createdUser = await this.prismaService.user.create({
+      return this.prismaService.user.create({
         data: {
           username: user.username,
           password: hashedPassword,
           name: user.name,
           surname: user.surname,
           patronymic: user.patronymic || null,
-          role: user.role || 'VISITOR',
+          role: user.role || 'USER',
         },
       });
-
-      const createdContact = await this.prismaService.contact.create({
-        data: {
-          phone: user.phone,
-          email: user.email,
-          user: { connect: { username: +user.username } },
-        },
-      });
-
-      return { ...createdUser, ...createdContact };
     } catch (error) {
-      console.error('Error creating user or contact:', error);
-      throw new BadRequestException('Пользователь уже существует');
+      console.error('Error creating user:', error);
+      throw new ConflictException('Пользователь с таким логином уже существует.');
     }
   }
 
@@ -47,7 +35,7 @@ export class UserService {
   }
 
   find(username: number) {
-    return this.prismaService.user.findFirst({
+    const user = this.prismaService.user.findFirst({
       where: {
         username: username,
       },
@@ -57,12 +45,15 @@ export class UserService {
         preferred_settings: true,
       },
     });
+
+    if (!user) {
+      throw new BadRequestException('Неверный логин пользователя.');
+    }
+
+    return user;
   }
 
-  async findAll(userRole: Role) {
-    if (!userRole.includes(Role.ADMIN || Role.OWNER)) {
-      throw new ForbiddenException();
-    }
+  async findAll() {
     return this.prismaService.user.findMany({
       include: {
         contacts: true,
@@ -72,17 +63,28 @@ export class UserService {
     });
   }
 
-  async delete(username: number, currentUser: JwtPayload) {
-    await this.checkUserCredentials({ username }, currentUser, true);
-
-    return this.prismaService.user.delete({
+  async delete(username: number) {
+    const user = this.prismaService.user.delete({
       where: { username },
       select: { username: true },
     });
+
+    if (!user) {
+      throw new BadRequestException('Неверный логин пользователя.');
+    }
+
+    return user;
   }
 
   // НУЖНО СДЕЛАТЬ НОРМАЛЬНУЮ ТИПИЗАЦИЮ
-  async checkUserCredentials(credentials: { username: number; password?: string }, currentUser: JwtPayload, withoutPassword: boolean = false) {
+  async checkUserCredentials(
+    credentials: {
+      username: number;
+      password?: string;
+    },
+    currentUser: JwtPayload,
+    withoutPassword: boolean = false,
+  ) {
     const isAdmin = currentUser.role.includes(Role.ADMIN || Role.OWNER);
 
     if (currentUser.username !== credentials.username && !isAdmin) {

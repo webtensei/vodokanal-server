@@ -8,34 +8,37 @@ import { Role } from '@prisma/client';
 export class AddressService {
   constructor(private readonly prismaService: PrismaService) {}
 
-  async create(address: CreateAddressDto, currentUser: JwtPayload) {
-    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
-      throw new ForbiddenException();
-    }
-    const existsAddress = await this.prismaService.address.findFirst({
-      where: {
-        street: address.street,
-        house: address.house,
-        apartment: address.apartment || null,
-      },
+  async create(address: CreateAddressDto) {
+    const existsAddress = await this.findByAddress(address.street, address.house, address.apartment).catch(() => {
+      return null;
     });
 
     if (existsAddress) {
-      throw new ConflictException('Данный адрес уже зарегистрирован в системе. Обратитесь в поддержку');
+      throw new ConflictException('Данный адрес уже зарегистрирован в системе.');
     }
-    switch (address.type) {
+    switch (address.buildingType) {
       case 'CITIZEN':
         break;
       case 'BUSINESS':
         break;
     }
-    return this.prismaService.address.create({
-      data: {
-        ...address,
-        system_id: 'asd',
-        apartment: address.apartment || null,
-      },
-    });
+
+    try {
+      return this.prismaService.address.create({
+        data: {
+          street: address.street,
+          house: address.house,
+          apartment: address.apartment || null,
+          user: { connect: { username: +address.username } },
+          // hardcoded shit under
+          type: address.buildingType,
+          system_id: 'asd',
+        },
+      });
+    } catch (error) {
+      console.error('Error creating contacts:', error);
+      throw new BadRequestException('Не удалось создать адрес.');
+    }
   }
 
   async delete(addressId: number, currentUser: JwtPayload) {
@@ -46,6 +49,22 @@ export class AddressService {
         id: addressId,
       },
     });
+  }
+
+  async findByAddress(street: string, house: string, apartment?: string) {
+    const address = await this.prismaService.address.findFirst({
+      where: {
+        street: street,
+        house: house,
+        apartment: apartment || null,
+      },
+    });
+
+    if (!address) {
+      throw new ConflictException('Не удалось найти адрес.');
+    }
+
+    return address;
   }
 
   async findOne(addressId: number, currentUser: JwtPayload) {
