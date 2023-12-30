@@ -93,11 +93,18 @@ model Payment {
   metters    String[]
   amount     String
   payer      String
+  status     PaymentStatus
   payment_id String
   created_at DateTime @default(now())
   addr       Address  @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+enum PaymentStatus{
+waiting_for_capture
+pending
+succeeded
+canceled
 }
 
 model Token {
@@ -108,11 +115,4 @@ model Token {
   user       User     @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("tokens")
-}
-
-model Variable {
-  key   String @id @unique
-  value String
-
-  @@map("variables")
 }

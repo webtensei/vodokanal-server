@@ -4,6 +4,9 @@ CREATE TYPE "roles" AS ENUM ('VISITOR', 'USER', 'ADMIN', 'OWNER');
 -- CreateEnum
 CREATE TYPE "address_type" AS ENUM ('CITIZEN', 'BUSINESS');
 
+-- CreateEnum
+CREATE TYPE "PaymentStatus" AS ENUM ('waiting_for_capture', 'pending', 'succeeded', 'canceled');
+
 -- CreateTable
 CREATE TABLE "users" (
     "username" INTEGER NOT NULL,
@@ -62,6 +65,7 @@ CREATE TABLE "payments" (
     "metters" TEXT[],
     "amount" TEXT NOT NULL,
     "payer" TEXT NOT NULL,
+    "status" "PaymentStatus" NOT NULL,
     "payment_id" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
@@ -72,14 +76,6 @@ CREATE TABLE "tokens" (
     "expired_in" TIMESTAMP(3) NOT NULL,
     "username" INTEGER NOT NULL,
     "user_agent" TEXT NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "variables" (
-    "key" TEXT NOT NULL,
-    "value" TEXT NOT NULL,
-
-    CONSTRAINT "variables_pkey" PRIMARY KEY ("key")
 );
 
 -- CreateIndex
@@ -102,9 +98,6 @@ CREATE UNIQUE INDEX "payments_id_key" ON "payments"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tokens_token_key" ON "tokens"("token");
-
--- CreateIndex
-CREATE UNIQUE INDEX "variables_key_key" ON "variables"("key");
 
 -- AddForeignKey
 ALTER TABLE "contacts" ADD CONSTRAINT "contacts_username_fkey" FOREIGN KEY ("username") REFERENCES "users"("username") ON DELETE CASCADE ON UPDATE CASCADE;

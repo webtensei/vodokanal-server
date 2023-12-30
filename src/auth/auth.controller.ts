@@ -34,6 +34,7 @@ export class AuthController {
     if (user === null || undefined) {
       throw new BadRequestException(`Не получилось зарегестрировать пользователя: ${JSON.stringify(dto)}`);
     }
+    //     res.status(HttpStatus.CREATED).json('somethingf');
     return user;
   }
 
