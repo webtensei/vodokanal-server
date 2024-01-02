@@ -1,13 +1,16 @@
-import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, ParseIntPipe, Post, UseInterceptors } from '@nestjs/common';
+import { Body, ClassSerializerInterceptor, Controller, Delete, Get, Param, ParseIntPipe, Post, UseGuards, UseInterceptors } from '@nestjs/common';
 import { UserService } from '@user/user.service';
 import { ComplexUserResponse, UserResponse } from '@user/responses';
-import { CurrentUser } from '@shared/decorators';
+import { CurrentUser, Roles } from '@shared/decorators';
 import { JwtPayload } from '@auth/interfaces';
 import { CreateUserDto } from '@user/dto/create-user.dto';
+import { RolesGuard } from '@auth/guards/role.guard';
+import { Role } from '@prisma/client';
 
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
+
   // patched 28.12
   @UseInterceptors(ClassSerializerInterceptor)
   @Post()
@@ -15,6 +18,7 @@ export class UserController {
     const user = await this.userService.create(dto);
     return new UserResponse(user);
   }
+
   // patched 28.12
   @UseInterceptors(ClassSerializerInterceptor)
   @Get(':username')
@@ -24,6 +28,8 @@ export class UserController {
   }
 
   // ROLE GUARD HERE
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   async findAllUsers() {
