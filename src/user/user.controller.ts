@@ -11,7 +11,6 @@ import { Role } from '@prisma/client';
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // patched 28.12
   @UseInterceptors(ClassSerializerInterceptor)
   @Post()
   async createUser(@Body() dto: CreateUserDto) {
@@ -19,7 +18,6 @@ export class UserController {
     return new UserResponse(user);
   }
 
-  // patched 28.12
   @UseInterceptors(ClassSerializerInterceptor)
   @Get(':username')
   async findOneUser(@Param('username', ParseIntPipe) username: number, @CurrentUser() currentUser: JwtPayload) {
@@ -27,9 +25,8 @@ export class UserController {
     return new UserResponse(user);
   }
 
-  // ROLE GUARD HERE
   @UseGuards(RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN || Role.OWNER)
   @UseInterceptors(ClassSerializerInterceptor)
   @Get()
   async findAllUsers() {
@@ -37,7 +34,8 @@ export class UserController {
     return users.map((user) => new ComplexUserResponse(user));
   }
 
-  // ROLE GUARD HERE
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN || Role.OWNER)
   @Delete(':username')
   async deleteUser(@Param('username', ParseIntPipe) username: number) {
     return this.userService.delete(username);

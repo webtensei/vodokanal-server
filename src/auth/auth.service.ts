@@ -53,7 +53,7 @@ export class AuthService {
   }
 
   async login(dto: LoginDto, agent: string, ip: string): Promise<LoginInterface> {
-    const existsUser = await this.userService.find(dto.username).catch((err) => {
+    const existsUser = await this.userService.find(dto.username, true).catch((err) => {
       this.logger.error(err);
       return null;
     });

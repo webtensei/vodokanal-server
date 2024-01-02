@@ -1,16 +1,14 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtPayload } from '@auth/interfaces';
 import { PrismaService } from '@prisma/prisma.service';
-import { UserService } from '@user/user.service';
 import { UpdateUserContactsDto } from './dto/update-contacts.dto';
 import { CreateContactsDto } from './dto/create-contacts.dto';
+import { Role } from '@prisma/client';
+import { compareSync } from 'bcrypt';
 
 @Injectable()
 export class ContactsService {
-  constructor(
-    private readonly prismaService: PrismaService,
-    private readonly userService: UserService,
-  ) {}
+  constructor(private readonly prismaService: PrismaService) {}
 
   async create(userContacts: CreateContactsDto) {
     try {
@@ -27,15 +25,28 @@ export class ContactsService {
     }
   }
 
+  // USER PASSWORD CHECK FAILS
   async updateContacts(contacts: UpdateUserContactsDto, currentUser: JwtPayload) {
-    const existsUser = await this.userService.checkUserCredentials(
-      {
-        username: contacts.username,
-        password: contacts.password,
-      },
-      currentUser,
-    );
+    const isAdmin = currentUser.role.includes(Role.ADMIN || Role.OWNER);
 
+    if (currentUser.username !== contacts.username && !isAdmin) {
+      throw new ForbiddenException();
+    }
+
+    if (!isAdmin && !contacts.password) {
+      throw new BadRequestException('Пароль не предоставлен');
+    }
+
+    const existsUser = await this.prismaService.user.findFirst({
+      where: { username: contacts.username },
+      include: { contacts: true },
+    });
+
+    const isPasswordEquals = compareSync(contacts.password, existsUser.password);
+
+    if (!existsUser || (isAdmin ? false : !isPasswordEquals)) {
+      throw new UnauthorizedException('Неверный логин или пароль.');
+    }
     const newEmail = contacts.email !== existsUser.contacts.email;
     const newPhone = contacts.phone !== existsUser.contacts.phone;
 

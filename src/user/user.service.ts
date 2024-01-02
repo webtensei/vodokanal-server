@@ -1,15 +1,23 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
 import { CreateUserDto } from '@user/dto/create-user.dto';
 import { JwtPayload } from '@auth/interfaces';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { ComplexUserResponse } from '@user/responses';
+import { ConfigService } from '@nestjs/config';
+import { convertToSecondsUtil } from '@shared/utils';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    private readonly configService: ConfigService,
+  ) {}
 
-  // Partial<User>
   async create(user: CreateUserDto) {
     try {
       const hashedPassword = this.hashPassword(user.password);
@@ -34,22 +42,30 @@ export class UserService {
     return this.checkUserCredentials({ username }, currentUser, true);
   }
 
-  find(username: number) {
-    const user = this.prismaService.user.findFirst({
-      where: {
-        username: username,
-      },
-      include: {
-        contacts: true,
-        addresses: true,
-        preferred_settings: true,
-      },
-    });
-
-    if (!user) {
-      throw new BadRequestException('Неверный логин пользователя.');
+  // be aware, check old commits
+  async find(username: number, isReset: boolean = false) {
+    if (isReset) {
+      await this.cacheManager.del(String(username));
     }
-
+    const user = await this.cacheManager.get<ComplexUserResponse>(String(username));
+    if (!user) {
+      console.log('findone');
+      const user = await this.prismaService.user.findFirst({
+        where: {
+          username: username,
+        },
+        include: {
+          contacts: true,
+          addresses: true,
+          preferred_settings: true,
+        },
+      });
+      if (!user) {
+        return null;
+      }
+      await this.cacheManager.set(String(username), user, convertToSecondsUtil(this.configService.get('JWT_EXPIRE')));
+      return user;
+    }
     return user;
   }
 
@@ -76,7 +92,7 @@ export class UserService {
     return user;
   }
 
-  // НУЖНО СДЕЛАТЬ НОРМАЛЬНУЮ ТИПИЗАЦИЮ
+  // НУЖНО YDALIT`
   async checkUserCredentials(
     credentials: {
       username: number;
