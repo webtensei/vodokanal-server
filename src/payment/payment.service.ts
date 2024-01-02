@@ -2,6 +2,7 @@ import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
 import { ICreatePayment, Payment, YooCheckout } from '@a2seven/yoo-checkout';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PrismaService } from '@prisma/prisma.service';
+import { PaymentStatus } from '@prisma/client';
 
 @Injectable()
 export class PaymentService implements OnModuleInit {
@@ -23,7 +24,31 @@ export class PaymentService implements OnModuleInit {
     return configuratedPayment.confirmation.confirmation_url;
   }
 
-  async notify(notification) {}
+  async notify(notification) {
+    await this.updatePaymentStatus(notification.object.id, notification.object.status);
+    if (notification.event === 'payment.waiting_for_capture') {
+      try {
+        await this.checkout.capturePayment(notification.object.id, notification.object.amount);
+        return 0;
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    return 0;
+  }
+
+  private async updatePaymentStatus(paymentId: string, status: PaymentStatus) {
+    return this.prismaService.payment.update({
+      where: { payment_id: paymentId },
+      data: {
+        status: status,
+      },
+    });
+  }
+
+  // функция передает список счетчиков и сумму оплаты по ним
+  private async informServices() {}
 
   private buildPaymentPayload(payment: CreatePaymentDto): ICreatePayment {
     const createPayload: ICreatePayment = {

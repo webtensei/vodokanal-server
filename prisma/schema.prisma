@@ -88,23 +88,23 @@ model PreferredSettings {
 }
 
 model Payment {
-  id         Int      @unique @default(autoincrement())
+  payment_id String        @unique
   addressId  Int
   metters    String[]
   amount     String
   payer      String
   status     PaymentStatus
-  payment_id String
-  created_at DateTime @default(now())
-  addr       Address  @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  created_at DateTime      @default(now())
+  addr       Address       @relation(fields: [addressId], references: [id], onDelete: Cascade)
 
   @@map("payments")
 }
-enum PaymentStatus{
-waiting_for_capture
-pending
-succeeded
-canceled
+
+enum PaymentStatus {
+  waiting_for_capture
+  pending
+  succeeded
+  canceled
 }
 
 model Token {
