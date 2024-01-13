@@ -9,4 +9,8 @@ export class GradController {
   generateSession() {
     return this.gradService.generateSession();
   }
+  @Get('testnet')
+  testreq() {
+    return this.gradService.getApartments(6888);
+  }
 }

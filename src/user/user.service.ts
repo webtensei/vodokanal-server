@@ -49,7 +49,6 @@ export class UserService {
     }
     const user = await this.cacheManager.get<ComplexUserResponse>(String(username));
     if (!user) {
-      console.log('findone');
       const user = await this.prismaService.user.findFirst({
         where: {
           username: username,
@@ -58,6 +57,7 @@ export class UserService {
           contacts: true,
           addresses: true,
           preferred_settings: true,
+          login_histories: true,
         },
       });
       if (!user) {

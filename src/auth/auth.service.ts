@@ -91,12 +91,10 @@ export class AuthService {
   }
 
   private async generateTokens(user: User, agent: string): Promise<Tokens> {
-    const accessToken =
-      `Bearer ` +
-      this.jwtService.sign({
-        username: user.username,
-        role: user.role,
-      });
+    const accessToken = this.jwtService.sign({
+      username: user.username,
+      role: user.role,
+    });
     const refreshToken = await this.getRefreshToken(user.username, agent);
     return { accessToken, refreshToken };
   }
