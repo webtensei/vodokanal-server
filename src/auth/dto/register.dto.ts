@@ -23,7 +23,7 @@ export class RegisterDto {
   @IsPhoneNumber('RU')
   phone: string;
   @IsEnum(AddressType)
-  buildingType: AddressType;
+  type: AddressType;
   @IsNotEmpty()
   @IsString()
   street: string;
@@ -31,4 +31,7 @@ export class RegisterDto {
   @IsString()
   house: string;
   apartment?: string;
+  @IsNotEmpty()
+  @IsString()
+  system_id: string;
 }

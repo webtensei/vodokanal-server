@@ -1,4 +1,4 @@
-import { ArrayMinSize, ArrayNotEmpty, IsArray, IsDecimal, IsInt, IsNotEmpty, IsString } from 'class-validator';
+import { ArrayMinSize, ArrayNotEmpty, IsArray, IsInt, IsNotEmpty, IsNumberString, IsString } from 'class-validator';
 
 export class CreatePaymentDto {
   @IsInt()
@@ -8,8 +8,9 @@ export class CreatePaymentDto {
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  metters: string[];
-  @IsDecimal()
+  meters: string[];
+  services?: string[];
+  @IsNumberString()
   @IsNotEmpty()
   amount: string;
   @IsNotEmpty()

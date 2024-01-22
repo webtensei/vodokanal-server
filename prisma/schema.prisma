@@ -78,6 +78,13 @@ enum AddressType {
   @@map("address_type")
 }
 
+model ExternalStreetMap {
+  name    String  @id @unique
+  grad_id String?
+
+  @@map("street_map")
+}
+
 model PreferredSettings {
   username          Int     @unique
   preferred_theme   String  @default("dark")
@@ -90,7 +97,8 @@ model PreferredSettings {
 model Payment {
   payment_id String        @unique
   addressId  Int
-  metters    String[]
+  meters    String[]
+  services    String[]
   amount     String
   payer      String
   status     PaymentStatus

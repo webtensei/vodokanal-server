@@ -10,7 +10,8 @@ export class CreateAddressDto {
   @IsNotEmpty()
   @IsString()
   house: string;
+  system_id: string;
   apartment?: string;
   @IsEnum(AddressType)
-  buildingType: AddressType;
+  type: AddressType;
 }

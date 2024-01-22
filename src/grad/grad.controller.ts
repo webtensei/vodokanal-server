@@ -1,5 +1,7 @@
-import { Controller, Get } from '@nestjs/common';
+import { Body, Controller, Get, Post } from '@nestjs/common';
 import { GradService } from './grad.service';
+import { IsString } from 'class-validator';
+import { CheckAddressDto } from './dto/check-address.dto';
 
 @Controller('grad')
 export class GradController {
@@ -9,8 +11,14 @@ export class GradController {
   generateSession() {
     return this.gradService.generateSession();
   }
+
   @Get('testnet')
   testreq() {
-    return this.gradService.getApartments(6888);
+    return this.gradService.getStreets();
+  }
+
+  @Post('check')
+  checkAddr(@Body() address: CheckAddressDto) {
+    return this.gradService.checkAddressExists(address);
   }
 }

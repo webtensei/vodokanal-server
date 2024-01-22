@@ -3,24 +3,24 @@ import { CreateAddressDto } from './dto/create-address.dto';
 import { PrismaService } from '@prisma/prisma.service';
 import { JwtPayload } from '@auth/interfaces';
 import { Role } from '@prisma/client';
+import { GradService } from '../grad/grad.service';
+import { CheckAddressValidDto } from './dto/check-address-valid.dto';
+import { SendMeterIndicationDto } from './dto/send-meter-indication.dto';
 
 @Injectable()
 export class AddressService {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly gradService: GradService,
+  ) {}
 
   async create(address: CreateAddressDto) {
     const existsAddress = await this.findByAddress(address.street, address.house, address.apartment).catch(() => {
       return null;
     });
 
-    if (existsAddress) {
+    if (existsAddress && existsAddress.system_id === address.system_id) {
       throw new ConflictException('Данный адрес уже зарегистрирован в системе.');
-    }
-    switch (address.buildingType) {
-      case 'CITIZEN':
-        break;
-      case 'BUSINESS':
-        break;
     }
 
     try {
@@ -31,8 +31,8 @@ export class AddressService {
           apartment: address.apartment || null,
           user: { connect: { username: +address.username } },
           // hardcoded shit under
-          type: address.buildingType,
-          system_id: 'asd',
+          type: address.type,
+          system_id: address.system_id,
         },
       });
     } catch (error) {
@@ -69,6 +69,74 @@ export class AddressService {
 
   async findOne(addressId: number, currentUser: JwtPayload) {
     return this.checkAddressCredentials(addressId, currentUser);
+  }
+
+  async updateStreets() {
+    const gradList = await this.gradService.getStreets();
+    const formatedGradList = gradList.map((street) => ({ grad_id: street.id, name: street.name }));
+
+    return this.prismaService.externalStreetMap.createMany({ data: formatedGradList });
+  }
+
+  async getExternalStreets() {
+    return this.prismaService.externalStreetMap.findMany({});
+  }
+
+  async checkExternalAddressCredentials(address: CheckAddressValidDto) {
+    switch (address.type) {
+      case 'CITIZEN':
+        return await this.gradService.checkAddressExists(address);
+      case 'BUSINESS':
+        break;
+    }
+  }
+
+  async sendMeterIndications(dto: SendMeterIndicationDto, currentUser: JwtPayload) {
+    const address = await this.prismaService.address.findFirst({ where: { id: dto.addressId } });
+    if (!address) throw new BadRequestException('Адрес не найден');
+
+    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
+
+    switch (address.type) {
+      case 'CITIZEN':
+        return await this.gradService.sendMeterIndications(address.system_id, dto.metersList, dto.chargesList);
+      case 'BUSINESS':
+        break;
+    }
+  }
+
+  async findMeters(addressId: number, currentUser: JwtPayload) {
+    const address = await this.prismaService.address.findFirst({ where: { id: addressId } });
+    if (!address) throw new BadRequestException('Адрес не найден');
+
+    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
+
+    switch (address.type) {
+      case 'CITIZEN':
+        return await this.gradService.getMeters(address.system_id);
+      case 'BUSINESS':
+        break;
+    }
+  }
+
+  async findServices(addressId: number, currentUser: JwtPayload) {
+    const address = await this.prismaService.address.findFirst({ where: { id: addressId } });
+    if (!address) throw new BadRequestException('Адрес не найден');
+
+    if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException();
+    }
+
+    switch (address.type) {
+      case 'CITIZEN':
+        return await this.gradService.getAbonentServices(address.system_id);
+      case 'BUSINESS':
+        break;
+    }
   }
 
   private async checkAddressCredentials(addressId: number, currentUser: JwtPayload) {

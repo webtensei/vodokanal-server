@@ -9,6 +9,8 @@ import { Cache } from 'cache-manager';
 import { ComplexUserResponse } from '@user/responses';
 import { ConfigService } from '@nestjs/config';
 import { convertToSecondsUtil } from '@shared/utils';
+import { ChangePasswordDto } from '@user/dto/change-password.dto';
+import { use } from 'passport';
 
 @Injectable()
 export class UserService {
@@ -120,5 +122,21 @@ export class UserService {
 
   private hashPassword(password: string) {
     return hashSync(password, genSaltSync(10));
+  }
+
+  async changePassword(dto: ChangePasswordDto, currentUser: JwtPayload) {
+    const user = await this.prismaService.user.findFirst({ where: { username: currentUser.username } });
+    const isValidPassword = compareSync(dto.password, user.password);
+    if (!isValidPassword) {
+      throw new UnauthorizedException('Старый пароль введён неверно');
+    }
+    const hashedPassword = this.hashPassword(dto.password);
+    const updatedUser = await this.prismaService.user.update({
+      where: { username: currentUser.username },
+      data: {
+        password: hashedPassword,
+      },
+    });
+    return updatedUser;
   }
 }

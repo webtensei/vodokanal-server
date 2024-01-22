@@ -21,6 +21,7 @@ import { RolesGuard } from '@auth/guards/role.guard';
 import { Role, Token } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
 import { DevicesResponse } from '@user/responses/devices.response';
+import { ChangePasswordDto } from '@user/dto/change-password.dto';
 
 @Controller('user')
 export class UserController {
@@ -34,6 +35,12 @@ export class UserController {
   async devices(@CurrentUser() currentUser: JwtPayload) {
     const devices = await this.prismaService.token.findMany({ where: { username: +currentUser.username } });
     return devices.map((device) => new DevicesResponse(device));
+  }
+
+  @Post('changepassword')
+  async changePass(@Body() dto: ChangePasswordDto, @CurrentUser() currentUser: JwtPayload) {
+    const devices = await this.userService.changePassword(dto, currentUser);
+    return HttpStatus.OK;
   }
 
   @Post('unauthenticateDevice')

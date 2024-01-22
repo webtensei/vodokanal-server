@@ -3,10 +3,14 @@ import { ICreatePayment, Payment, YooCheckout } from '@a2seven/yoo-checkout';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PrismaService } from '@prisma/prisma.service';
 import { PaymentStatus } from '@prisma/client';
+import { GradService } from '../grad/grad.service';
 
 @Injectable()
 export class PaymentService implements OnModuleInit {
-  constructor(private readonly prismaService: PrismaService) {}
+  constructor(
+    private readonly prismaService: PrismaService,
+    private readonly gradService: GradService,
+  ) {}
 
   private checkout: YooCheckout;
 
@@ -25,16 +29,29 @@ export class PaymentService implements OnModuleInit {
   }
 
   async notify(notification) {
-    await this.updatePaymentStatus(notification.object.id, notification.object.status);
+    const updatedPayment = await this.updatePaymentStatus(notification.object.id, notification.object.status);
     if (notification.event === 'payment.waiting_for_capture') {
       try {
         await this.checkout.capturePayment(notification.object.id, notification.object.amount);
-        return 0;
       } catch (error) {
         console.error(error);
+        return 0;
       }
     }
-
+    if (updatedPayment.status === 'succeeded') {
+      const address = await this.prismaService.address.findUnique({ where: { id: updatedPayment.addressId } });
+      switch (address.type) {
+        case 'CITIZEN':
+          return this.gradService.sendConfirmedPayment(
+            address.system_id,
+            Number(updatedPayment.amount) * 100,
+            updatedPayment.payment_id,
+            updatedPayment.meters,
+          );
+        case 'BUSINESS':
+          break;
+      }
+    }
     return 0;
   }
 
@@ -47,13 +64,18 @@ export class PaymentService implements OnModuleInit {
     });
   }
 
-  // функция передает список счетчиков и сумму оплаты по ним
+  getAddrPayments(addressId: number) {
+    return this.prismaService.payment.findMany({ where: { addressId: addressId } });
+  }
+
+  // функция передает список счетчиков и сумму оплаты по ним для notify
   private async informServices() {}
 
   private buildPaymentPayload(payment: CreatePaymentDto): ICreatePayment {
+    const value = Number(payment.amount) * Number(process.env.PAYMENT_SERVICE_COMISSION);
     const createPayload: ICreatePayment = {
       amount: {
-        value: payment.amount,
+        value: String(value),
         currency: 'RUB',
       },
       confirmation: {
@@ -70,7 +92,8 @@ export class PaymentService implements OnModuleInit {
         data: {
           payer: payment.payer,
           amount: payment.amount,
-          metters: payment.metters,
+          meters: payment.meters,
+          services: payment.services || null,
           status: configuratedPayment.status,
           payment_id: configuratedPayment.id,
           created_at: configuratedPayment.created_at,

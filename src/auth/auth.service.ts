@@ -57,7 +57,6 @@ export class AuthService {
       this.logger.error(err);
       return null;
     });
-
     if (!existsUser || !compareSync(dto.password, existsUser.password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
