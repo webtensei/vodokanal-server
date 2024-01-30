@@ -10,6 +10,7 @@ import { GradModule } from './grad/grad.module';
 import { LoggerModule } from './logger/logger.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { PaymentModule } from './payment/payment.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PaymentModule } from './payment/payment.module';
     LoggerModule,
     ContactsModule,
     PaymentModule,
+    MailModule,
   ],
   controllers: [],
   providers: [

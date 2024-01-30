@@ -45,7 +45,7 @@ export class UserService {
   }
 
   // be aware, check old commits
-  async find(username: number, isReset: boolean = false) {
+  async find(username: number, isReset: boolean = true) {
     if (isReset) {
       await this.cacheManager.del(String(username));
     }

@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtPayload } from '@auth/interfaces';
 import { PrismaService } from '@prisma/prisma.service';
 import { UpdateUserContactsDto } from './dto/update-contacts.dto';
@@ -65,5 +65,11 @@ export class ContactsService {
 
   async delete(username: number) {
     return this.prismaService.contact.delete({ where: { username } });
+  }
+
+  verify(currentUser: JwtPayload, type: 'email' | 'phone') {
+    if (type === 'email') {
+      return { status: HttpStatus.OK, message: 'Ссылка успешно оптправлена' };
+    }
   }
 }
