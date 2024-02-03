@@ -1,5 +1,75 @@
-<div>
-  <h1>Activate Your Account</h1>
-  <p>Please click the link below to activate your account:</p>
-  <a href="{{link}}">Activate Account</a>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Activate Your Account</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      margin: 0;
+      padding: 0;
+    }
+    .email-container {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #18181b;
+      padding: 8px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    .email-header {
+      background-color: #27272a;
+      color: #ffffff;
+      padding: 10px 20px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+      text-align: center;
+    }
+    .email-content {
+      padding: 20px;
+      text-align: center;
+      color: #ffffff;
+    }
+    .email-footer {
+      padding: 20px;
+      text-align: center;
+      color: gray;
+      font-weight: bold;
+    }
+    .email-content p {
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    .activate-btn {
+      display: inline-block;
+      background-color: #22bc66;
+      color: #ffffff;
+      padding: 10px 25px;
+      margin-top: 25px;
+      border-radius: 16px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .activate-btn:hover {
+      background-color: #1ca557;
+    }
+  </style>
+</head>
+<body>
+<div class="email-container">
+  <div class="email-header">
+    <h1>Активация аккаунта ООО Водоканал</h1>
+  </div>
+  <div class="email-content">
+    <p>Для активации аккаунта нажмите на кнопку ниже:</p>
+    <a href="{{link}}" class="activate-btn">Активировать аккаунт</a>
+  </div>
+  <div class="email-footer">
+    <p>Если Вы не совершали это действие - проигнорируйте данное сообщение</p>
+  </div>
 </div>
+</body>
+</html>

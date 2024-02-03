@@ -9,8 +9,8 @@ export class MailService {
     await this.mailerService.sendMail({
       to,
       subject: 'Активация аккаунта ООО ВОДОКАНАЛ',
-      template: 'activation', // Specify the name of the email template
-      context: { link }, // Pass the link as a variable to the template
+      template: 'activation',
+      context: { link },
     });
   }
 }
