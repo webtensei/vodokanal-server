@@ -3,7 +3,6 @@ import * as https from 'https';
 import axios from 'axios';
 import * as xml2js from 'xml2js';
 import { PrismaService } from '@prisma/prisma.service';
-import { AddressType } from '@prisma/client';
 import { CheckAddressDto } from './dto/check-address.dto';
 import { v4 } from 'uuid';
 
@@ -22,13 +21,13 @@ export class GradService implements OnModuleInit {
   private session: string;
 
   async onModuleInit() {
-    await this.generateSession();
-    setInterval(
-      async () => {
-        await this.generateSession();
-      },
-      19 * 60 * 1000,
-    ); // обновляем сессию раз в 19 минут. лучше обновлять если makeRequest отдает sessionExpired, но это доработать можно и потом
+    // await this.generateSession();
+    // setInterval(
+    //   async () => {
+    //     await this.generateSession();
+    //   },
+    //   19 * 60 * 1000,
+    // ); // обновляем сессию раз в 19 минут. лучше обновлять если makeRequest отдает sessionExpired, но это доработать можно и потом
   }
 
   async generateSession() {
@@ -87,7 +86,7 @@ export class GradService implements OnModuleInit {
   }
 
   async sendMeterIndications(accountId, metersList: string[], chargesList: string[]) {
-    const requestedIndications = await this.makeRequest('register/payments', {
+    return this.makeRequest('register/payments', {
       town_id: process.env.GRAD_TOWN_ID,
       trx_id: v4(),
       terminal_id: process.env.GRAD_TERMINAL_ID,
@@ -95,8 +94,6 @@ export class GradService implements OnModuleInit {
       meters_list: metersList.join(';'),
       charges_list: chargesList.join(';'),
     });
-
-    return requestedIndications;
   }
 
   async sendConfirmedPayment(accountId, amount: string | number, trx_id: string, metersList: string[]) {

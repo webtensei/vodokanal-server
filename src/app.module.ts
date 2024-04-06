@@ -6,11 +6,11 @@ import { AuthModule } from '@auth/auth.module';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from '@auth/guards/jwt-auth.guard';
 import { AddressModule } from './address/address.module';
-import { GradModule } from './grad/grad.module';
 import { LoggerModule } from './logger/logger.module';
 import { ContactsModule } from './contacts/contacts.module';
 import { PaymentModule } from './payment/payment.module';
 import { MailModule } from './mail/mail.module';
+import { GradModule } from './grad/grad.module';
 
 @Module({
   imports: [

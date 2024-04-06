@@ -3,13 +3,14 @@ import { JwtPayload } from '@auth/interfaces';
 import { PrismaService } from '@prisma/prisma.service';
 import { UpdateUserContactsDto } from './dto/update-contacts.dto';
 import { CreateContactsDto } from './dto/create-contacts.dto';
-import { Role } from '@prisma/client';
+import { Contact, Role } from '@prisma/client';
 import { compareSync } from 'bcrypt';
 import { MailService } from '../mail/mail.service';
 import { v4 } from 'uuid';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import * as process from 'process';
+import axios from 'axios';
 
 @Injectable()
 export class ContactsService {
@@ -78,27 +79,16 @@ export class ContactsService {
 
   async createVerification(currentUser: JwtPayload, type: 'email' | 'phone') {
     const contacts = await this.prismaService.contact.findUnique({ where: { username: currentUser.username } });
-
     if (type === 'email') {
-      const activationCode = v4();
-
-      const existingActivationCode = await this.cacheManager.get(contacts.email);
-      if (existingActivationCode) {
-        await this.cacheManager.del(contacts.email);
-      }
-      await this.cacheManager.set(contacts.email, activationCode, 60 * 60 * 24);
-
-      await this.mailService.sendActivationMail(
-        contacts.email,
-        process.env.API_URL + `/cabinet/verify/${contacts.username}&type=${type}&code=${activationCode}`,
-      );
-      console.log(await this.cacheManager.get(contacts.email));
-
-      return { status: HttpStatus.OK, message: 'Ссылка успешно отправлена' };
+      return this.createEmailVerify(contacts, type);
     }
+    if (type === 'phone') {
+      return this.createPhoneVerify(contacts, type);
+    }
+    throw new BadRequestException('Неожиданная ошибка');
   }
 
-  // TODO: тут я получаю вытащенный из запроса хуйню и уже провожу верификацию (меняю записи в бд) и редерект чтоли надо сделать, хз
+  // TODO: тут я получаю вытащенную из запроса хуйню и уже провожу верификацию (меняю записи в бд) и редерект что-ли надо сделать, хз
   async verify(username: string, code: string, type: 'phone' | 'email') {
     const foundedUser = await this.prismaService.contact.findUnique({ where: { username: +username } });
 
@@ -113,11 +103,63 @@ export class ContactsService {
 
     await this.prismaService.contact.update({
       where: { username: foundedUser.username },
-      data: { email_activated: true, email_activated_at: new Date() },
+      data:
+        type === 'phone'
+          ? { phone_activated: true, phone_activated_at: new Date() }
+          : {
+              email_activated: true,
+              email_activated_at: new Date(),
+            },
     });
 
     await this.cacheManager.del(foundedUser[type]);
 
     return { status: HttpStatus.OK, message: 'Успешное подтверждение' };
+  }
+
+  private async createEmailVerify(contacts: Contact, type: 'email' | 'phone') {
+    const activationCode = v4();
+
+    const existingActivationCode = await this.cacheManager.get(contacts.email);
+    if (existingActivationCode) {
+      await this.cacheManager.del(contacts.email);
+    }
+    await this.cacheManager.set(contacts.email, activationCode, 60 * 60 * 24);
+
+    await this.mailService.sendActivationMail(
+      contacts.email,
+      process.env.API_URL + `/cabinet/verify/${contacts.username}&type=${type}&code=${activationCode}`,
+    );
+
+    return { status: HttpStatus.OK, message: 'Ссылка успешно отправлена' };
+  }
+
+  private async createPhoneVerify(contacts: Contact, type: 'email' | 'phone') {
+    const formdata = new FormData();
+    formdata.append('public_key', process.env.ZVONOK_COM_PUBLIC_API);
+    formdata.append('phone', `${contacts.phone}`);
+    formdata.append('campaign_id', process.env.ZVONOK_COM_VERIFY_CAMPAIGN);
+
+    const config = {
+      method: 'post',
+      url: 'https://zvonok.com/manager/cabapi_external/api/v1/phones/flashcall/',
+      data: formdata,
+    };
+    const response = await axios(config)
+      .then(async function (response) {
+        return response.data;
+      })
+      .catch(function (error) {
+        console.log(error);
+        throw new BadRequestException(`Ошибка:${error.response.data.data}.`);
+      });
+    console.log(response);
+    if (response.status !== 'ok') throw new BadRequestException('Не удалось создать звонок');
+    const existingActivationCode = await this.cacheManager.get(contacts.phone);
+    if (existingActivationCode) {
+      await this.cacheManager.del(contacts.phone);
+    }
+    await this.cacheManager.set(contacts.phone, response.data.pincode, 60 * 60 * 24);
+    return { status: HttpStatus.OK, message: 'Код успешно создан' };
   }
 }
