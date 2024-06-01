@@ -1,9 +1,18 @@
-import { ArrayMinSize, ArrayNotEmpty, IsArray, IsInt, IsNotEmpty, IsNumberString, IsString } from 'class-validator';
+import {
+  ArrayMinSize,
+  ArrayNotEmpty,
+  IsArray,
+  IsInt,
+  IsNotEmpty,
+  IsNumberString,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
 export class CreatePaymentDto {
-  @IsInt()
+  @IsUUID()
   @IsNotEmpty()
-  addressId: number;
+  addressId: string;
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)

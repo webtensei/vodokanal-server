@@ -34,7 +34,7 @@ enum Role {
 }
 
 model Contact {
-  username           Int       @unique
+  username           Int       @unique @id
   email              String
   email_activated    Boolean   @default(false)
   email_activated_at DateTime?
@@ -47,7 +47,7 @@ model Contact {
 }
 
 model LoginHistory {
-  id         Int      @unique @default(autoincrement())
+  id         String      @unique @default(uuid()) @id
   username   Int
   login_time DateTime @default(now())
   ip_address String
@@ -58,7 +58,7 @@ model LoginHistory {
 }
 
 model Address {
-  id        Int         @unique @default(autoincrement())
+  id        String         @unique @default(uuid()) @id
   username  Int
   street    String
   house     String
@@ -86,7 +86,7 @@ model ExternalStreetMap {
 }
 
 model PreferredSettings {
-  username          Int     @unique
+  username          Int     @unique @id
   preferred_theme   String  @default("dark")
   preferred_address String?
   user              User    @relation(fields: [username], references: [username], onDelete: Cascade)
@@ -95,10 +95,10 @@ model PreferredSettings {
 }
 
 model Payment {
-  payment_id String        @unique
-  addressId  Int
-  meters    String[]
-  services    String[]
+  payment_id String        @unique @id
+  addressId  String
+  meters     String[]
+  services   String[]
   amount     String
   payer      String
   status     PaymentStatus
@@ -116,6 +116,7 @@ enum PaymentStatus {
 }
 
 model Token {
+  id         String   @id @default(uuid())
   token      String   @unique
   expired_in DateTime
   username   Int

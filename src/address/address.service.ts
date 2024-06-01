@@ -41,14 +41,10 @@ export class AddressService {
     }
   }
 
-  async delete(addressId: number, currentUser: JwtPayload) {
-    await this.checkAddressCredentials(addressId, currentUser);
+  async delete(id: string, currentUser: JwtPayload) {
+    await this.checkAddressCredentials(id, currentUser);
 
-    return this.prismaService.address.delete({
-      where: {
-        id: addressId,
-      },
-    });
+    return this.prismaService.address.delete({ where: { id } });
   }
 
   async findByAddress(street: string, house: string, apartment?: string) {
@@ -67,8 +63,8 @@ export class AddressService {
     return address;
   }
 
-  async findOne(addressId: number, currentUser: JwtPayload) {
-    return this.checkAddressCredentials(addressId, currentUser);
+  async findOne(id: string, currentUser: JwtPayload) {
+    return this.checkAddressCredentials(id, currentUser);
   }
 
   async updateStreets() {
@@ -93,6 +89,7 @@ export class AddressService {
 
   async sendMeterIndications(dto: SendMeterIndicationDto, currentUser: JwtPayload) {
     const address = await this.prismaService.address.findFirst({ where: { id: dto.addressId } });
+
     if (!address) throw new BadRequestException('Адрес не найден');
 
     if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
@@ -107,8 +104,9 @@ export class AddressService {
     }
   }
 
-  async findMeters(addressId: number, currentUser: JwtPayload) {
+  async findMeters(addressId: string, currentUser: JwtPayload) {
     const address = await this.prismaService.address.findFirst({ where: { id: addressId } });
+
     if (!address) throw new BadRequestException('Адрес не найден');
 
     if (address.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
@@ -123,7 +121,7 @@ export class AddressService {
     }
   }
 
-  async findServices(addressId: number, currentUser: JwtPayload) {
+  async findServices(addressId: string, currentUser: JwtPayload) {
     const address = await this.prismaService.address.findFirst({ where: { id: addressId } });
     if (!address) throw new BadRequestException('Адрес не найден');
 
@@ -139,12 +137,8 @@ export class AddressService {
     }
   }
 
-  private async checkAddressCredentials(addressId: number, currentUser: JwtPayload) {
-    const address = await this.prismaService.address.findFirst({
-      where: {
-        id: addressId,
-      },
-    });
+  private async checkAddressCredentials(id: string, currentUser: JwtPayload) {
+    const address = await this.prismaService.address.findFirst({ where: { id } });
 
     if (!address) {
       throw new BadRequestException('Адрес не найден.');

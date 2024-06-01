@@ -1,9 +1,9 @@
-import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsString, ValidateIf } from 'class-validator';
+import { IsArray, IsEnum, IsNotEmpty, IsNumber, IsString, IsUUID, ValidateIf } from 'class-validator';
 
 export class SendMeterIndicationDto {
-  @IsNumber()
+  @IsUUID()
   @IsNotEmpty()
-  addressId: number;
+  addressId: string;
   @IsArray()
   metersList: [];
   @IsArray()

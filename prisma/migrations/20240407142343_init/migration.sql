@@ -28,54 +28,75 @@ CREATE TABLE "contacts" (
     "email_activated_at" TIMESTAMP(3),
     "phone" TEXT NOT NULL,
     "phone_activated" BOOLEAN NOT NULL DEFAULT false,
-    "phone_activated_at" TIMESTAMP(3)
+    "phone_activated_at" TIMESTAMP(3),
+
+    CONSTRAINT "contacts_pkey" PRIMARY KEY ("username")
 );
 
 -- CreateTable
 CREATE TABLE "login_histories" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "username" INTEGER NOT NULL,
     "login_time" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "ip_address" TEXT NOT NULL,
-    "user_agent" TEXT NOT NULL
+    "user_agent" TEXT NOT NULL,
+
+    CONSTRAINT "login_histories_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
 CREATE TABLE "addresses" (
-    "id" SERIAL NOT NULL,
+    "id" TEXT NOT NULL,
     "username" INTEGER NOT NULL,
     "street" TEXT NOT NULL,
     "house" TEXT NOT NULL,
     "apartment" TEXT,
     "type" "address_type" NOT NULL,
-    "system_id" TEXT NOT NULL
+    "system_id" TEXT NOT NULL,
+
+    CONSTRAINT "addresses_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateTable
+CREATE TABLE "street_map" (
+    "name" TEXT NOT NULL,
+    "grad_id" TEXT,
+
+    CONSTRAINT "street_map_pkey" PRIMARY KEY ("name")
 );
 
 -- CreateTable
 CREATE TABLE "preferred_settings" (
     "username" INTEGER NOT NULL,
     "preferred_theme" TEXT NOT NULL DEFAULT 'dark',
-    "preferred_address" TEXT
+    "preferred_address" TEXT,
+
+    CONSTRAINT "preferred_settings_pkey" PRIMARY KEY ("username")
 );
 
 -- CreateTable
 CREATE TABLE "payments" (
-    "id" SERIAL NOT NULL,
-    "addressId" INTEGER NOT NULL,
-    "metters" TEXT[],
+    "payment_id" TEXT NOT NULL,
+    "addressId" TEXT NOT NULL,
+    "meters" TEXT[],
+    "services" TEXT[],
     "amount" TEXT NOT NULL,
     "payer" TEXT NOT NULL,
     "status" "PaymentStatus" NOT NULL,
-    "payment_id" TEXT NOT NULL,
-    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "payments_pkey" PRIMARY KEY ("payment_id")
 );
 
 -- CreateTable
 CREATE TABLE "tokens" (
+    "id" TEXT NOT NULL,
     "token" TEXT NOT NULL,
     "expired_in" TIMESTAMP(3) NOT NULL,
     "username" INTEGER NOT NULL,
-    "user_agent" TEXT NOT NULL
+    "user_agent" TEXT NOT NULL,
+
+    CONSTRAINT "tokens_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
@@ -91,10 +112,13 @@ CREATE UNIQUE INDEX "login_histories_id_key" ON "login_histories"("id");
 CREATE UNIQUE INDEX "addresses_id_key" ON "addresses"("id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "street_map_name_key" ON "street_map"("name");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "preferred_settings_username_key" ON "preferred_settings"("username");
 
 -- CreateIndex
-CREATE UNIQUE INDEX "payments_id_key" ON "payments"("id");
+CREATE UNIQUE INDEX "payments_payment_id_key" ON "payments"("payment_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tokens_token_key" ON "tokens"("token");

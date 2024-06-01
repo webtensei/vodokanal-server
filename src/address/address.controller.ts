@@ -39,7 +39,7 @@ export class AddressController {
   }
 
   @Get(':addressId/meters')
-  async findMeters(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async findMeters(@Param('addressId') addressId: string, @CurrentUser() currentUser: JwtPayload) {
     const response = await this.addressService.findMeters(addressId, currentUser);
     return response;
   }
@@ -50,11 +50,11 @@ export class AddressController {
   }
 
   @Get(':addressId/services')
-  async findServices(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async findServices(@Param('addressId') addressId: string, @CurrentUser() currentUser: JwtPayload) {
     return this.addressService.findServices(addressId, currentUser);
   }
   @Get(':addressId')
-  async findAddress(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async findAddress(@Param('addressId') addressId: string, @CurrentUser() currentUser: JwtPayload) {
     const response = await this.addressService.findOne(addressId, currentUser);
     return new AddressResponse(response);
   }
@@ -66,7 +66,7 @@ export class AddressController {
   }
 
   @Delete(':id')
-  async deleteAddress(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async deleteAddress(@Param('addressId') addressId: string, @CurrentUser() currentUser: JwtPayload) {
     const response = await this.addressService.delete(addressId, currentUser);
     return new AddressResponse(response);
   }

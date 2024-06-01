@@ -1,4 +1,4 @@
-import { BadRequestException, ConflictException, ForbiddenException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, ForbiddenException, HttpStatus, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { PrismaService } from '@prisma/prisma.service';
 import { Role } from '@prisma/client';
 import { compareSync, genSaltSync, hashSync } from 'bcrypt';
@@ -40,16 +40,11 @@ export class UserService {
     }
   }
 
-  findOne(username: number, currentUser: JwtPayload) {
-    return this.checkUserCredentials({ username }, currentUser, true);
-  }
+  async find(username: number, isReset: boolean = false) {
+    if (isReset) await this.cacheManager.del(String(username));
 
-  // be aware, check old commits
-  async find(username: number, isReset: boolean = true) {
-    if (isReset) {
-      await this.cacheManager.del(String(username));
-    }
     const user = await this.cacheManager.get<ComplexUserResponse>(String(username));
+
     if (!user) {
       const user = await this.prismaService.user.findFirst({
         where: {
@@ -59,12 +54,11 @@ export class UserService {
           contacts: true,
           addresses: true,
           preferred_settings: true,
-          login_histories: true,
         },
       });
-      if (!user) {
-        return null;
-      }
+
+      if (!user) return null;
+
       await this.cacheManager.set(String(username), user, convertToSecondsUtil(this.configService.get('JWT_EXPIRE')));
       return user;
     }
@@ -87,35 +81,7 @@ export class UserService {
       select: { username: true },
     });
 
-    if (!user) {
-      throw new BadRequestException('Неверный логин пользователя.');
-    }
-
-    return user;
-  }
-
-  // НУЖНО YDALIT`
-  async checkUserCredentials(
-    credentials: {
-      username: number;
-      password?: string;
-    },
-    currentUser: JwtPayload,
-    withoutPassword: boolean = false,
-  ) {
-    const isAdmin = currentUser.role.includes(Role.ADMIN || Role.OWNER);
-
-    if (currentUser.username !== credentials.username && !isAdmin) {
-      throw new ForbiddenException();
-    }
-
-    const user = await this.find(credentials.username);
-
-    const isPasswordEquals = withoutPassword || (!!credentials.password && compareSync(credentials.password, user.password));
-
-    if (!user || (isAdmin ? false : !isPasswordEquals)) {
-      throw new UnauthorizedException('Неверный логин или пароль.');
-    }
+    if (!user) throw new BadRequestException('Неверный логин пользователя.');
 
     return user;
   }
@@ -127,9 +93,9 @@ export class UserService {
   async changePassword(dto: ChangePasswordDto, currentUser: JwtPayload) {
     const user = await this.prismaService.user.findFirst({ where: { username: currentUser.username } });
     const isValidPassword = compareSync(dto.password, user.password);
-    if (!isValidPassword) {
-      throw new UnauthorizedException('Старый пароль введён неверно');
-    }
+
+    if (!isValidPassword) throw new UnauthorizedException('Старый пароль введён неверно');
+
     const hashedPassword = this.hashPassword(dto.password);
     const updatedUser = await this.prismaService.user.update({
       where: { username: currentUser.username },
@@ -137,6 +103,9 @@ export class UserService {
         password: hashedPassword,
       },
     });
-    return updatedUser;
+
+    if (!updatedUser) throw new BadRequestException('Не удалось обновить данные');
+
+    return HttpStatus.OK;
   }
 }

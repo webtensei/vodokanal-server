@@ -1,8 +1,4 @@
-import { IsInt, IsString } from 'class-validator';
+import { createZodDto } from 'nestjs-zod';
+import { loginRequest } from '@auth/dto/login.zod';
 
-export class LoginDto {
-  @IsInt()
-  username: number;
-  @IsString()
-  password: string;
-}
+export class LoginDto  extends createZodDto(loginRequest) {}

@@ -1,9 +1,9 @@
 import {
   Body,
   ClassSerializerInterceptor,
-  ConflictException,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpStatus,
   Param,
@@ -20,7 +20,6 @@ import { CreateUserDto } from '@user/dto/create-user.dto';
 import { RolesGuard } from '@auth/guards/role.guard';
 import { Role, Token } from '@prisma/client';
 import { PrismaService } from '@prisma/prisma.service';
-import { DevicesResponse } from '@user/responses/devices.response';
 import { ChangePasswordDto } from '@user/dto/change-password.dto';
 
 @Controller('user')
@@ -30,33 +29,9 @@ export class UserController {
     private readonly prismaService: PrismaService,
   ) {}
 
-  @UseInterceptors(ClassSerializerInterceptor)
-  @Get('authenticatedDevices')
-  async devices(@CurrentUser() currentUser: JwtPayload) {
-    const devices = await this.prismaService.token.findMany({ where: { username: +currentUser.username } });
-    return devices.map((device) => new DevicesResponse(device));
-  }
-
-  @Post('changepassword')
+  @Post(':username/changepassword')
   async changePass(@Body() dto: ChangePasswordDto, @CurrentUser() currentUser: JwtPayload) {
     const devices = await this.userService.changePassword(dto, currentUser);
-    return HttpStatus.OK;
-  }
-
-  @Post('unauthenticateDevice')
-  async unauthDevice(@Body() dto: Partial<Token>, @CurrentUser() currentUser: JwtPayload) {
-    try {
-      const foundedSession = await this.prismaService.token.findFirst({
-        where: {
-          user_agent: dto.user_agent,
-          expired_in: dto.expired_in,
-          username: currentUser.username,
-        },
-      });
-      await this.prismaService.token.delete({ where: { token: foundedSession.token } });
-    } catch (e) {
-      throw new ConflictException('Сессия не была найдена/удалена');
-    }
     return HttpStatus.OK;
   }
 
@@ -70,7 +45,8 @@ export class UserController {
   @UseInterceptors(ClassSerializerInterceptor)
   @Get(':username')
   async findOneUser(@Param('username', ParseIntPipe) username: number, @CurrentUser() currentUser: JwtPayload) {
-    const user = await this.userService.findOne(username, currentUser);
+    if (currentUser.username !== username) throw new ForbiddenException();
+    const user = await this.userService.find(username);
     return new UserResponse(user);
   }
 

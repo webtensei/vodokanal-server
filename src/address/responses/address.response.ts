@@ -3,7 +3,7 @@ import { $Enums, Address } from '@prisma/client';
 export class AddressResponse implements Address {
   apartment: string | null;
   house: string;
-  id: number;
+  id: string;
   street: string;
   username: number;
   system_id: string;

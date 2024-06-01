@@ -9,7 +9,7 @@ export class PaymentController {
   constructor(private readonly paymentService: PaymentService) {}
 
   @Get('/:addressId')
-  async getAddrPayments(@Param('addressId', ParseIntPipe) addressId: number, @CurrentUser() currentUser: JwtPayload) {
+  async getAddrPayments(@Param('addressId') addressId: string, @CurrentUser() currentUser: JwtPayload) {
     return this.paymentService.getAddrPayments(addressId);
   }
   @Post()

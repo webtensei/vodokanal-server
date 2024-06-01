@@ -11,6 +11,7 @@ import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
 import * as process from 'process';
 import axios from 'axios';
+import { Response } from 'express';
 
 @Injectable()
 export class ContactsService {
@@ -88,8 +89,7 @@ export class ContactsService {
     throw new BadRequestException('Неожиданная ошибка');
   }
 
-  // TODO: тут я получаю вытащенную из запроса хуйню и уже провожу верификацию (меняю записи в бд) и редерект что-ли надо сделать, хз
-  async verify(username: string, code: string, type: 'phone' | 'email') {
+  async verify(username: string, code: string, type: 'phone' | 'email', res: Response) {
     const foundedUser = await this.prismaService.contact.findUnique({ where: { username: +username } });
 
     const isActivated = type + '_activated';
@@ -113,7 +113,7 @@ export class ContactsService {
     });
 
     await this.cacheManager.del(foundedUser[type]);
-
+    if (type === 'email') res.redirect(`${process.env.CLIENT_URL}`);
     return { status: HttpStatus.OK, message: 'Успешное подтверждение' };
   }
 
@@ -128,7 +128,7 @@ export class ContactsService {
 
     await this.mailService.sendActivationMail(
       contacts.email,
-      process.env.API_URL + `/cabinet/verify/${contacts.username}&type=${type}&code=${activationCode}`,
+      process.env.API_URL + `/contacts/verify/${contacts.username}?type=${type}&code=${activationCode}`,
     );
 
     return { status: HttpStatus.OK, message: 'Ссылка успешно отправлена' };

@@ -1,7 +1,7 @@
 import { ConflictException, HttpStatus, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { LoginDto, RegisterDto } from '@auth/dto';
 import { UserService } from '@user/user.service';
-import { LoginInterface, Tokens } from '@auth/interfaces';
+import { JwtPayload, Tokens } from '@auth/interfaces';
 import { compareSync } from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { Token, User } from '@prisma/client';
@@ -52,11 +52,12 @@ export class AuthService {
     return { statusCode: HttpStatus.CREATED, message: 'Created' };
   }
 
-  async login(dto: LoginDto, agent: string, ip: string): Promise<LoginInterface> {
+  async login(dto: LoginDto, agent: string, ip: string): Promise<Tokens> {
     const existsUser = await this.userService.find(dto.username, true).catch((err) => {
       this.logger.error(err);
       return null;
     });
+
     if (!existsUser || !compareSync(dto.password, existsUser.password)) {
       throw new UnauthorizedException('Неверный логин или пароль.');
     }
@@ -67,26 +68,34 @@ export class AuthService {
       user_agent: agent,
     });
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password, ...user } = existsUser;
-
-    const tokens = await this.generateTokens(user, agent);
-    return { ...tokens, user };
+    const tokens = await this.generateTokens(existsUser, agent);
+    return { ...tokens };
   }
 
   async refreshTokens(refreshToken: string, agent: string): Promise<Tokens> {
     const token = await this.prismaService.token.findUnique({
       where: { token: refreshToken },
     });
-    if (!token) {
-      throw new UnauthorizedException();
-    }
+    if (!token) throw new UnauthorizedException();
+
     await this.prismaService.token.delete({ where: { token: refreshToken } });
-    if (new Date(token.expired_in) < new Date()) {
-      throw new UnauthorizedException();
-    }
+
+    if (new Date(token.expired_in) < new Date()) throw new UnauthorizedException();
+
     const user = await this.userService.find(token.username);
     return this.generateTokens(user, agent);
+  }
+
+  async findUserDevices(user: JwtPayload) {
+    return this.prismaService.token.findMany({ where: { username: Number(user.username) } });
+  }
+
+  async deleteDevice(id: string, user: JwtPayload) {
+    const foundedSession = await this.prismaService.token.findUnique({ where: { id } });
+
+    if (!foundedSession || foundedSession.username !== user.username) throw new ConflictException('Сессия не была найдена/удалена');
+
+    return this.prismaService.token.delete({ where: { id }, select: { id: true } });
   }
 
   private async generateTokens(user: User, agent: string): Promise<Tokens> {

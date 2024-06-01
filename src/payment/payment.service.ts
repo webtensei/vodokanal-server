@@ -64,7 +64,7 @@ export class PaymentService implements OnModuleInit {
     });
   }
 
-  getAddrPayments(addressId: number) {
+  getAddrPayments(addressId: string) {
     return this.prismaService.payment.findMany({ where: { addressId: addressId } });
   }
 

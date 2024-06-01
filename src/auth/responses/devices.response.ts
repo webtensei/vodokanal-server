@@ -2,6 +2,7 @@ import { Token } from '@prisma/client';
 import { Exclude } from 'class-transformer';
 
 export class DevicesResponse implements Token {
+  id: string;
   expired_in: Date;
   @Exclude()
   token: string;
