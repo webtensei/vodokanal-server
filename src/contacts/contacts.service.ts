@@ -44,24 +44,15 @@ export class ContactsService {
       throw new ForbiddenException();
     }
 
-    if (!isAdmin && !contacts.password) {
-      throw new BadRequestException('Пароль не предоставлен');
-    }
-
     const existsUser = await this.prismaService.user.findFirst({
       where: { username: contacts.username },
       include: { contacts: true },
     });
 
-    const isPasswordEquals = compareSync(contacts.password, existsUser.password);
-
-    if (!existsUser || (isAdmin ? false : !isPasswordEquals)) {
-      throw new UnauthorizedException('Неверный логин или пароль.');
-    }
     const newEmail = contacts.email !== existsUser.contacts.email;
     const newPhone = contacts.phone !== existsUser.contacts.phone;
 
-    return this.prismaService.contact.update({
+    const newContacts = this.prismaService.contact.update({
       where: { username: contacts.username },
       data: {
         email: contacts.email,
@@ -72,6 +63,8 @@ export class ContactsService {
         phone_activated_at: newPhone ? null : existsUser.contacts.phone_activated_at,
       },
     });
+    await this.cacheManager.del(String(contacts.username));
+    return newContacts;
   }
 
   async delete(username: number) {
@@ -113,6 +106,7 @@ export class ContactsService {
     });
 
     await this.cacheManager.del(foundedUser[type]);
+    await this.cacheManager.del(String(username));
     if (type === 'email') res.redirect(`${process.env.CLIENT_URL}`);
     return { status: HttpStatus.OK, message: 'Успешное подтверждение' };
   }
@@ -128,7 +122,7 @@ export class ContactsService {
 
     await this.mailService.sendActivationMail(
       contacts.email,
-      process.env.API_URL + `/contacts/verify/${contacts.username}?type=${type}&code=${activationCode}`,
+      process.env.API_URL + `/contacts/verify/?username=${contacts.username}&type=${type}&code=${activationCode}`,
     );
 
     return { status: HttpStatus.OK, message: 'Ссылка успешно отправлена' };

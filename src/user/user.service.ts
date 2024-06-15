@@ -94,7 +94,7 @@ export class UserService {
     const user = await this.prismaService.user.findFirst({ where: { username: currentUser.username } });
     const isValidPassword = compareSync(dto.password, user.password);
 
-    if (!isValidPassword) throw new UnauthorizedException('Старый пароль введён неверно');
+    if (!isValidPassword) throw new BadRequestException('Старый пароль введён неверно');
 
     const hashedPassword = this.hashPassword(dto.password);
     const updatedUser = await this.prismaService.user.update({

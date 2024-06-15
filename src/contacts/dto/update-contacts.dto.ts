@@ -4,7 +4,6 @@ export class UpdateUserContactsDto {
   @IsInt()
   @IsNotEmpty()
   username: number;
-  password: string;
   @IsNotEmpty()
   @IsEmail()
   email: string;

@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import { Cookie, CurrentUser, IpDoor, Public, UserAgent } from '@shared/decorators';
 import { DevicesResponse } from '@auth/responses/devices.response';
 import { ZodValidationPipe } from 'nestjs-zod';
+import { LoginHistoryResponse } from '@auth/responses/login-history.response';
 
 const REFRESH_TOKEN = 'refreshToken';
 
@@ -81,6 +82,13 @@ export class AuthController {
   @Get('me')
   me(@CurrentUser() user: JwtPayload) {
     return user;
+  }
+
+  @UseInterceptors(ClassSerializerInterceptor)
+  @Get('login-history')
+  async history(@CurrentUser() currentUser: JwtPayload) {
+    const devices = await this.authService.findLoginHistory(currentUser);
+    return devices.map((piece) => new LoginHistoryResponse(piece));
   }
 
   @UseInterceptors(ClassSerializerInterceptor)

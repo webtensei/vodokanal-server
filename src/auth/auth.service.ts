@@ -86,6 +86,9 @@ export class AuthService {
     return this.generateTokens(user, agent);
   }
 
+  async findLoginHistory(user: JwtPayload) {
+    return this.prismaService.loginHistory.findMany({ where: { username: Number(user.username) } });
+  }
   async findUserDevices(user: JwtPayload) {
     return this.prismaService.token.findMany({ where: { username: Number(user.username) } });
   }

@@ -8,6 +8,7 @@ import {
   HttpStatus,
   Param,
   ParseIntPipe,
+  Patch,
   Post,
   UseGuards,
   UseInterceptors,
@@ -29,7 +30,7 @@ export class UserController {
     private readonly prismaService: PrismaService,
   ) {}
 
-  @Post(':username/changepassword')
+  @Patch(':username/change/password')
   async changePass(@Body() dto: ChangePasswordDto, @CurrentUser() currentUser: JwtPayload) {
     const devices = await this.userService.changePassword(dto, currentUser);
     return HttpStatus.OK;
