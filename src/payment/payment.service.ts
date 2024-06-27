@@ -1,9 +1,10 @@
-import { ConflictException, Injectable, OnModuleInit } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, OnModuleInit } from '@nestjs/common';
 import { ICreatePayment, Payment, YooCheckout } from '@a2seven/yoo-checkout';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { PrismaService } from '@prisma/prisma.service';
-import { PaymentStatus } from '@prisma/client';
+import { PaymentStatus, Role } from '@prisma/client';
 import { GradService } from '../grad/grad.service';
+import { JwtPayload } from '@auth/interfaces';
 
 @Injectable()
 export class PaymentService implements OnModuleInit {
@@ -21,7 +22,10 @@ export class PaymentService implements OnModuleInit {
     });
   }
 
-  async create(payment: CreatePaymentDto) {
+  async create(payment: CreatePaymentDto, currentUser: JwtPayload) {
+    if (payment.username !== currentUser.username && !currentUser.role.includes(Role.ADMIN || Role.OWNER)) {
+      throw new ForbiddenException('Невозможно оплатить услуги другого пользователя');
+    }
     const paymentPayload = this.buildPaymentPayload(payment);
     const configuratedPayment = await this.createPayment(paymentPayload);
     await this.savePayment(configuratedPayment, payment);
@@ -39,13 +43,13 @@ export class PaymentService implements OnModuleInit {
       }
     }
     if (updatedPayment.status === 'succeeded') {
-      const address = await this.prismaService.address.findUnique({ where: { id: updatedPayment.addressId } });
+      const address = await this.prismaService.address.findUnique({ where: { id: updatedPayment.address } });
       switch (address.type) {
         case 'CITIZEN':
           return this.gradService.sendConfirmedPayment(
             address.system_id,
             Number(updatedPayment.amount) * 100,
-            updatedPayment.payment_id,
+            updatedPayment.id,
             updatedPayment.meters,
           );
         case 'BUSINESS':
@@ -57,7 +61,7 @@ export class PaymentService implements OnModuleInit {
 
   private async updatePaymentStatus(paymentId: string, status: PaymentStatus) {
     return this.prismaService.payment.update({
-      where: { payment_id: paymentId },
+      where: { id: paymentId },
       data: {
         status: status,
       },
@@ -65,7 +69,7 @@ export class PaymentService implements OnModuleInit {
   }
 
   getAddrPayments(addressId: string) {
-    return this.prismaService.payment.findMany({ where: { addressId: addressId } });
+    return this.prismaService.payment.findMany({ where: { address: addressId } });
   }
 
   // функция передает список счетчиков и сумму оплаты по ним для notify
@@ -90,14 +94,15 @@ export class PaymentService implements OnModuleInit {
     try {
       await this.prismaService.payment.create({
         data: {
-          payer: payment.payer,
           amount: payment.amount,
-          meters: payment.meters,
-          services: payment.services || null,
+          meters: payment.meters || null,
+          services: payment.services,
+          services_amount: payment.services_amount,
           status: configuratedPayment.status,
-          payment_id: configuratedPayment.id,
+          id: configuratedPayment.id,
           created_at: configuratedPayment.created_at,
           addr: { connect: { id: payment.addressId } },
+          user: { connect: { username: +payment.username } },
         },
       });
     } catch (error) {

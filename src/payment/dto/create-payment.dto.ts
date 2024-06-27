@@ -2,27 +2,31 @@ import {
   ArrayMinSize,
   ArrayNotEmpty,
   IsArray,
-  IsInt,
-  IsNotEmpty,
+  IsNotEmpty, IsNumber,
   IsNumberString,
   IsString,
   IsUUID,
 } from 'class-validator';
 
 export class CreatePaymentDto {
+  @IsNotEmpty()
+  @IsNumber()
+  username: number;
   @IsUUID()
   @IsNotEmpty()
   addressId: string;
+  meters?: string[];
   @IsArray()
   @ArrayNotEmpty()
   @ArrayMinSize(1)
   @IsString({ each: true })
-  meters: string[];
-  services?: string[];
+  services: string[];
+  @IsArray()
+  @ArrayNotEmpty()
+  @ArrayMinSize(1)
+  @IsString({ each: true })
+  services_amount: string[];
   @IsNumberString()
   @IsNotEmpty()
   amount: string;
-  @IsNotEmpty()
-  @IsString()
-  payer: string;
 }

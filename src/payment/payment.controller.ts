@@ -13,8 +13,8 @@ export class PaymentController {
     return this.paymentService.getAddrPayments(addressId);
   }
   @Post()
-  async createPayment(@Body() dto: CreatePaymentDto) {
-    return this.paymentService.create(dto);
+  async createPayment(@Body() dto: CreatePaymentDto, @CurrentUser() currentUser: JwtPayload) {
+    return this.paymentService.create(dto, currentUser);
   }
 
   @Public()

@@ -20,6 +20,7 @@ model User {
   login_histories    LoginHistory[]
   token              Token[]
   role               Role               @default(USER)
+  Payment            Payment[]
 
   @@map("users")
 }
@@ -34,7 +35,7 @@ enum Role {
 }
 
 model Contact {
-  username           Int       @unique @id
+  username           Int       @id @unique
   email              String
   email_activated    Boolean   @default(false)
   email_activated_at DateTime?
@@ -47,7 +48,7 @@ model Contact {
 }
 
 model LoginHistory {
-  id         String      @unique @default(uuid()) @id
+  id         String   @id @unique @default(uuid())
   username   Int
   login_time DateTime @default(now())
   ip_address String
@@ -58,7 +59,7 @@ model LoginHistory {
 }
 
 model Address {
-  id        String         @unique @default(uuid()) @id
+  id        String      @id @unique @default(uuid())
   username  Int
   street    String
   house     String
@@ -86,7 +87,7 @@ model ExternalStreetMap {
 }
 
 model PreferredSettings {
-  username          Int     @unique @id
+  username          Int     @id @unique
   preferred_theme   String  @default("dark")
   preferred_address String?
   user              User    @relation(fields: [username], references: [username], onDelete: Cascade)
@@ -95,15 +96,17 @@ model PreferredSettings {
 }
 
 model Payment {
-  payment_id String        @unique @id
-  addressId  String
-  meters     String[]
-  services   String[]
-  amount     String
-  payer      String
-  status     PaymentStatus
-  created_at DateTime      @default(now())
-  addr       Address       @relation(fields: [addressId], references: [id], onDelete: Cascade)
+  id      String        @id @unique
+  username        Int
+  address       String
+  meters          String[]
+  services        String[]
+  services_amount String[]
+  amount          String
+  status          PaymentStatus
+  created_at      DateTime      @default(now())
+  addr            Address       @relation(fields: [address], references: [id], onDelete: Cascade)
+  user            User          @relation(fields: [username], references: [username], onDelete: Cascade)
 
   @@map("payments")
 }
